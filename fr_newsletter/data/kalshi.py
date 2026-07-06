@@ -24,9 +24,25 @@ INTERVALS = {"1m": 1, "1h": 60, "1d": 1440}
 # Max candles the API returns per request.
 _MAX_CANDLES = 5000
 
-# Short-lived candle cache so a preview UI can re-render without refetching.
-_CACHE_TTL_S = 60
+# Short-lived caches so a preview UI can re-render without refetching, and so
+# resolve/list/render don't refetch the same event within a session burst.
+_CACHE_TTL_S = 120
 _candle_cache: dict[tuple, tuple[float, pd.DataFrame]] = {}
+_event_cache: dict[str, tuple[float, dict]] = {}
+
+# Kalshi rate-limits per IP (aggressively for unauthenticated readers, and
+# cloud egress IPs are shared) — space requests out and back off on 429.
+_MIN_CALL_SPACING_S = 0.25
+_RETRIES = 4
+_last_call = 0.0
+
+
+def _throttle() -> None:
+    global _last_call
+    wait = _last_call + _MIN_CALL_SPACING_S - time.monotonic()
+    if wait > 0:
+        time.sleep(wait)
+    _last_call = time.monotonic()
 
 
 @dataclass
@@ -74,10 +90,34 @@ class KalshiClient:
     def __init__(self, timeout: float = 30.0):
         self._http = httpx.Client(base_url=BASE_URL, timeout=timeout)
 
+    def _get(self, path: str, params: dict | None = None) -> dict:
+        """GET with request spacing and 429/5xx backoff (honors Retry-After)."""
+        for attempt in range(_RETRIES):
+            _throttle()
+            r = self._http.get(path, params=params)
+            if r.status_code == 429 or r.status_code >= 500:
+                if attempt == _RETRIES - 1:
+                    if r.status_code == 429:
+                        raise RuntimeError(
+                            "Kalshi is rate-limiting this server's IP (429) even after "
+                            f"{_RETRIES} retries with backoff — wait a minute and try again."
+                        )
+                    r.raise_for_status()
+                retry_after = r.headers.get("Retry-After")
+                delay = float(retry_after) if retry_after and retry_after.isdigit() else 0.8 * 2**attempt
+                time.sleep(min(delay, 15))
+                continue
+            r.raise_for_status()
+            return r.json()
+        raise AssertionError("unreachable")
+
     def get_event(self, event_ticker: str) -> dict:
-        r = self._http.get(f"/events/{event_ticker}", params={"with_nested_markets": True})
-        r.raise_for_status()
-        return r.json()["event"]
+        hit = _event_cache.get(event_ticker)
+        if hit and time.monotonic() - hit[0] < _CACHE_TTL_S:
+            return hit[1]
+        event = self._get(f"/events/{event_ticker}", params={"with_nested_markets": True})["event"]
+        _event_cache[event_ticker] = (time.monotonic(), event)
+        return event
 
     def list_markets(self, ref: str) -> list[dict]:
         """Summaries of every market in an event, highest volume first.
@@ -158,12 +198,11 @@ class KalshiClient:
         cursor = start_ts
         while cursor < end_ts:
             chunk_end = min(cursor + _MAX_CANDLES * minutes * 60, end_ts)
-            r = self._http.get(
+            payload = self._get(
                 f"/series/{ref.series_ticker}/markets/{ref.market_ticker}/candlesticks",
                 params={"start_ts": cursor, "end_ts": chunk_end, "period_interval": minutes},
             )
-            r.raise_for_status()
-            rows.extend(r.json().get("candlesticks") or [])
+            rows.extend(payload.get("candlesticks") or [])
             cursor = chunk_end
         df = _candles_to_df(rows)
         if len(_candle_cache) > 32:
