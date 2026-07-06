@@ -21,8 +21,12 @@ from fastapi import FastAPI, Form, Request  # noqa: E402
 from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
+import json  # noqa: E402
+
 from fr_newsletter.data.kalshi import KalshiClient  # noqa: E402
+from fr_newsletter.story import render_story  # noqa: E402
 from fr_newsletter.viz import Event, market_closeup, price_timeline  # noqa: E402
+from fr_newsletter.viz.sprites import generate_sprite  # noqa: E402
 
 app = FastAPI(title="Fantasy Reality chart generator")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -59,9 +63,15 @@ def parse_events(text: str) -> list[Event]:
     return events
 
 
+def _ctx(**overrides) -> dict:
+    ctx = {"png": None, "pngs": [], "sprite_png": None, "error": None, "form": {}, "story_json": ""}
+    ctx.update(overrides)
+    return ctx
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {"png": None, "error": None, "form": {}})
+    return templates.TemplateResponse(request, "index.html", _ctx())
 
 
 @app.get("/health")
@@ -115,10 +125,40 @@ def make_chart(
             kwargs["ylim"] = (lo, hi)
 
         fig = BUILDERS[chart_type](df, parse_events(events), **kwargs)
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        plt.close(fig)
-        png = base64.b64encode(buf.getvalue()).decode()
-        return templates.TemplateResponse(request, "index.html", {"png": png, "error": None, "form": form})
+        return templates.TemplateResponse(request, "index.html", _ctx(png=_fig_b64(fig), form=form))
     except Exception as exc:  # surface the problem in the page, keep the form filled
-        return templates.TemplateResponse(request, "index.html", {"png": None, "error": str(exc), "form": form})
+        return templates.TemplateResponse(request, "index.html", _ctx(error=str(exc), form=form))
+
+
+def _fig_b64(fig) -> str:
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+@app.post("/story", response_class=HTMLResponse)
+def story_mode(request: Request, story_json: str = Form(...)):
+    """Render every chart in a pasted story JSON (same shape as stories/*.json)."""
+    try:
+        story = json.loads(story_json)
+        pngs = [
+            {"name": Path(chart.get("output", f"chart-{i}.png")).name, "b64": _fig_b64(fig)}
+            for i, (chart, fig) in enumerate(render_story(story))
+        ]
+        if not pngs:
+            raise ValueError("Story has no charts.")
+        return templates.TemplateResponse(request, "index.html", _ctx(pngs=pngs, story_json=story_json))
+    except Exception as exc:
+        return templates.TemplateResponse(request, "index.html", _ctx(error=str(exc), story_json=story_json))
+
+
+@app.post("/sprite", response_class=HTMLResponse)
+def sprite_mode(request: Request, sprite_name: str = Form(...), sprite_subject: str = Form(...)):
+    """Generate a Nano Banana sprite into the sprite library (needs GEMINI_API_KEY)."""
+    try:
+        path = generate_sprite(sprite_name.strip(), sprite_subject.strip(), force=True)
+        b64 = base64.b64encode(path.read_bytes()).decode()
+        return templates.TemplateResponse(request, "index.html", _ctx(sprite_png=b64))
+    except Exception as exc:
+        return templates.TemplateResponse(request, "index.html", _ctx(error=str(exc)))

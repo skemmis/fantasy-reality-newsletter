@@ -22,6 +22,7 @@ class Event:
     dy: float = 60.0
     anchor: str = "price"       # "price" (on the line) or "top"/"bottom"
     line: bool = True           # draw the vertical event hairline (off for states)
+    zoom: float = 3.0           # sprite scale (nearest-neighbor; 1.0 = native pixels)
 
     @classmethod
     def from_dict(cls, d: dict) -> "Event":

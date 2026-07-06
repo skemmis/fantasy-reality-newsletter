@@ -45,7 +45,26 @@ the charts that tell it. See `stories/balogun-red-card/story.json`:
   labels; `meme` = pixel callout boxes + sprites), a title/subtitle, and `events`
 - `events[]` — `ts`, `label` (`\n` breaks lines), optional `sprite`
   (`red_card`), `dx`/`dy` label nudges in points, `line: false` for states
-  rather than moments
+  rather than moments, `zoom` for sprite scale
+- `sprites` (optional) — `{ "name": "subject description" }`; missing sprites
+  are generated with Nano Banana (see below) before rendering
+
+Chart-level knobs: `ylim` (tighten the y-axis around the action), `start`/`end`
+(window the x-axis), `title`, `subtitle`, `preset`, `resample`.
+
+## Sprites via Nano Banana
+
+Annotation art (the red card, etc.) can be generated instead of hand-drawn:
+each subject is wrapped in a house-style prompt (16-bit pixel art, Hyper Light
+Drifter palette, white background), then post-processed — background knocked
+out, nearest-neighbor downscaled so it stays crisp — into
+`fr_newsletter/assets/sprites/<name>.png`, referenceable from any event.
+
+Set `GEMINI_API_KEY` (a [Google AI Studio](https://aistudio.google.com/) key):
+- **Railway**: project → Variables → `GEMINI_API_KEY` — then use the web UI's
+  sprite generator card.
+- **GitHub Action**: repo → Settings → Secrets → Actions → `GEMINI_API_KEY` —
+  then story-declared `sprites` generate automatically on the next run.
 
 Candle data is snapshotted into `stories/<slug>/data/` so committed charts stay
 reproducible after markets close; `--refresh` (or the Action's checkbox)

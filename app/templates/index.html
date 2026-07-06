@@ -60,6 +60,20 @@
   </div>
   {% endif %}
 
+  {% for item in pngs %}
+  <div class="card result">
+    <img src="data:image/png;base64,{{ item.b64 }}" alt="{{ item.name }}">
+    <a class="dl" download="{{ item.name }}" href="data:image/png;base64,{{ item.b64 }}">↓ {{ item.name }}</a>
+  </div>
+  {% endfor %}
+
+  {% if sprite_png %}
+  <div class="card result">
+    <p style="font-size:0.8rem">Sprite saved to the library — reference it by name in any event.</p>
+    <img style="width:auto;image-rendering:pixelated;height:96px" src="data:image/png;base64,{{ sprite_png }}" alt="Generated sprite">
+  </div>
+  {% endif %}
+
   <form class="card" method="post" action="/chart">
     <label>Kalshi market (URL or ticker)</label>
     <input name="market" required placeholder="https://kalshi.com/markets/…" value="{{ form.market or '' }}">
@@ -111,6 +125,29 @@
     <div class="hint">sprite: red_card (or blank) · dx/dy nudge the label in points · line=false hides the vertical marker</div>
 
     <button type="submit">▸ Generate chart</button>
+  </form>
+
+  <form class="card" method="post" action="/story">
+    <h1 style="font-size:0.8rem">Story mode</h1>
+    <label>Paste a full story JSON (same shape as stories/*.json) — renders every chart in it</label>
+    <textarea name="story_json" style="min-height:14rem" placeholder='{"market": "…", "data_start": "…", "charts": [...]}'>{{ story_json }}</textarea>
+    <button type="submit">▸ Render story</button>
+  </form>
+
+  <form class="card" method="post" action="/sprite">
+    <h1 style="font-size:0.8rem">Sprite generator <span style="color:var(--muted)">(Nano Banana)</span></h1>
+    <div class="row">
+      <div>
+        <label>Sprite name</label>
+        <input name="sprite_name" required placeholder="crying_ref">
+      </div>
+      <div>
+        <label>Subject</label>
+        <input name="sprite_subject" required placeholder="a crying soccer referee holding a whistle">
+      </div>
+    </div>
+    <div class="hint">Requires the GEMINI_API_KEY environment variable. The result is styled to the house pixel-art palette automatically.</div>
+    <button type="submit">▸ Generate sprite</button>
   </form>
 </div>
 </body>

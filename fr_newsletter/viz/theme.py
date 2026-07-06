@@ -77,9 +77,9 @@ def apply() -> None:
             "axes.labelcolor": MUTED_TEXT,
             "xtick.color": MUTED_TEXT,
             "ytick.color": MUTED_TEXT,
-            "xtick.labelsize": 10,
-            "ytick.labelsize": 10,
-            "lines.linewidth": 2.0,
+            "xtick.labelsize": 13,
+            "ytick.labelsize": 13,
+            "lines.linewidth": 2.5,
             "lines.solid_capstyle": "round",
             "lines.solid_joinstyle": "round",
             "figure.dpi": 100,
@@ -111,21 +111,21 @@ def pixel_shadow(fig, ax, offset_px: float = 6.0) -> None:
 def title_block(fig, title: str, subtitle: str | None = None, *, preset: str = "editorial",
                 x: float = 0.06, y: float = 0.955) -> None:
     """Press Start 2P headline + Space Mono deck, top-left aligned."""
-    size = 15 if preset == "meme" else 13
+    size = 21 if preset == "meme" else 18
     fig.text(x, y, title.upper(), family=FONT_PIXEL, fontsize=size, color=INK,
              ha="left", va="top", linespacing=1.9)
     if subtitle:
         n_lines = title.count("\n") + 1
-        dy = (size * 1.9 * n_lines + 14) / (fig.get_size_inches()[1] * fig.dpi)
-        fig.text(x, y - dy, subtitle, family=FONT_MONO, fontsize=11.5,
+        dy = (size * 1.9 * n_lines + 16) / (fig.get_size_inches()[1] * fig.dpi)
+        fig.text(x, y - dy, subtitle, family=FONT_MONO, fontsize=14,
                  color=MUTED_TEXT, ha="left", va="top", linespacing=1.3)
 
 
 def footer(fig, source: str, *, x: float = 0.06) -> None:
     """Brand wordmark left, data source right."""
-    fig.text(x, 0.022, "FANTASY REALITY", family=FONT_PIXEL, fontsize=8,
+    fig.text(x, 0.022, "FANTASY REALITY", family=FONT_PIXEL, fontsize=10,
              color=MAGENTA, ha="left", va="bottom")
-    fig.text(1 - x + 0.0, 0.022, source, family=FONT_MONO, fontsize=8.5,
+    fig.text(1 - x + 0.0, 0.022, source, family=FONT_MONO, fontsize=11,
              color=MUTED_TEXT, ha="right", va="bottom")
 
 
@@ -144,15 +144,16 @@ def cents_axis(ax, lo: float = 0, hi: float = 100, step: float = 25) -> None:
 
 def end_marker(ax, x, y, label: str, color: str = YES) -> None:
     """>=8px end dot with a 2px surface ring + direct value label."""
-    ax.scatter([x], [y], s=90, color=color, edgecolor=CARD, linewidth=2, zorder=6,
+    ax.scatter([x], [y], s=130, color=color, edgecolor=CARD, linewidth=2, zorder=6,
                clip_on=False)
-    ax.annotate(label, (x, y), xytext=(10, 0), textcoords="offset points",
-                family=FONT_MONO, fontweight="bold", fontsize=13, color=INK,
+    ax.annotate(label, (x, y), xytext=(12, 0), textcoords="offset points",
+                family=FONT_MONO, fontweight="bold", fontsize=17, color=INK,
                 va="center", ha="left", zorder=6, annotation_clip=False)
 
 
 def callout(ax, xy, text: str, xytext, *, preset: str = "editorial",
-            sprite: str | None = None, color: str = INK, fontsize: float | None = None):
+            sprite: str | None = None, color: str = INK, fontsize: float | None = None,
+            sprite_zoom: float = 3.0):
     """Event annotation.
 
     ``editorial`` — quiet Space Mono label with a thin leader line.
@@ -163,7 +164,7 @@ def callout(ax, xy, text: str, xytext, *, preset: str = "editorial",
     if preset == "meme":
         t = ax.annotate(
             text.upper(), xy, xytext=xytext, textcoords="offset points",
-            family=FONT_PIXEL, fontsize=fontsize or 6.5, color=color, linespacing=2.1,
+            family=FONT_PIXEL, fontsize=fontsize or 9, color=color, linespacing=2.1,
             ha="center", va="center", zorder=7,
             bbox=dict(boxstyle="square,pad=0.75", facecolor=CARD, edgecolor=INK, linewidth=1.6),
             arrowprops=dict(arrowstyle="-", color=INK, linewidth=1.2,
@@ -177,13 +178,13 @@ def callout(ax, xy, text: str, xytext, *, preset: str = "editorial",
     else:
         t = ax.annotate(
             text, xy, xytext=xytext, textcoords="offset points",
-            family=FONT_MONO, fontsize=fontsize or 10, color=INK, linespacing=1.4,
+            family=FONT_MONO, fontsize=fontsize or 13, color=INK, linespacing=1.4,
             ha="center", va="center", zorder=7,
             arrowprops=dict(arrowstyle="-", color=MUTED_TEXT, linewidth=1.0,
                             shrinkA=6, shrinkB=3),
         )
     if sprite:
-        add_sprite(ax, sprite, xy=xy, xytext=xytext, owner=t)
+        add_sprite(ax, sprite, xy=xy, xytext=xytext, owner=t, zoom=sprite_zoom)
     return t
 
 
@@ -198,7 +199,7 @@ def add_sprite(ax, name: str, *, xy, xytext, owner=None, zoom: float = 3.0) -> N
     img = mimage.imread(str(path))
     box = OffsetImage(img, zoom=zoom, interpolation="nearest")
     # Place the sprite just above the callout text/box.
-    pad = 62 if owner is not None and owner.get_bbox_patch() is not None else 18
+    pad = 80 if owner is not None and owner.get_bbox_patch() is not None else 18
     ab = AnnotationBbox(box, xy, xybox=(xytext[0], xytext[1] + pad),
                         boxcoords="offset points", frameon=False, zorder=8,
                         annotation_clip=False)

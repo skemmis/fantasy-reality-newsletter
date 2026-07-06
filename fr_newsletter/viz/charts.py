@@ -63,7 +63,8 @@ def _annotate_events(ax, df: pd.DataFrame, events: list[Event], preset: str, tz:
             idx = df.index.searchsorted(x)
             idx = min(max(idx, 0), len(df) - 1)
             y = df["close"].iloc[idx]
-        theme.callout(ax, (x, y), ev.label, (ev.dx, ev.dy), preset=preset, sprite=ev.sprite)
+        theme.callout(ax, (x, y), ev.label, (ev.dx, ev.dy), preset=preset,
+                      sprite=ev.sprite, sprite_zoom=ev.zoom)
 
 
 def _source_line(ref_ticker: str, as_of: str | None, tz_label: str = "ET") -> str:
@@ -107,7 +108,9 @@ def price_timeline(
 
     ax.plot(data.index, data["close"], color=theme.YES, zorder=3)
 
-    theme.cents_axis(ax, *ylim, step=10 if (ylim[1] - ylim[0]) <= 50 else 25)
+    span = ylim[1] - ylim[0]
+    step = next(s for s in (1, 2, 5, 10, 25) if span / s <= 7)
+    theme.cents_axis(ax, *ylim, step=step)
     _day_axis(ax, tz)
     ax.set_xlim(data.index[0], data.index[-1] + (data.index[-1] - data.index[0]) * 0.05)
 
@@ -118,7 +121,7 @@ def price_timeline(
 
     if yes_label:
         ax.text(0.012, 0.965, yes_label, transform=ax.transAxes, family=theme.FONT_MONO,
-                fontsize=9.5, color=theme.MUTED_TEXT, va="top")
+                fontsize=12, color=theme.MUTED_TEXT, va="top")
 
     theme.title_block(fig, title, subtitle, preset=preset)
     theme.footer(fig, _source_line(ticker, as_of))
@@ -144,8 +147,8 @@ def market_closeup(
     data = _prep(df, tz, start, end)
 
     fig = plt.figure(figsize=(14.56, 9.6))
-    ax = fig.add_axes([0.06, 0.36, 0.88, 0.46])
-    axv = fig.add_axes([0.06, 0.115, 0.88, 0.185], sharex=ax)
+    ax = fig.add_axes([0.06, 0.345, 0.88, 0.435])
+    axv = fig.add_axes([0.06, 0.115, 0.88, 0.18], sharex=ax)
     theme.pixel_shadow(fig, ax)
     theme.pixel_shadow(fig, axv)
 
@@ -178,7 +181,7 @@ def market_closeup(
     axv.set_ylim(0, data["volume"].max() * 1.15 or 1)
     axv.yaxis.set_major_formatter(lambda v, _: f"{v/1000:,.0f}K" if v >= 1000 else f"{v:.0f}")
     axv.text(0.012, 0.90, "volume (contracts/min)", transform=axv.transAxes,
-             family=theme.FONT_MONO, fontsize=9, color=theme.MUTED_TEXT, va="top")
+             family=theme.FONT_MONO, fontsize=12, color=theme.MUTED_TEXT, va="top")
     span_h = (data.index[-1] - data.index[0]).total_seconds() / 3600
     _time_axis(axv, tz, span_h)
 

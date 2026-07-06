@@ -11,10 +11,36 @@
       "subtitle": "Kalshi \"USA advances past Belgium\" — price in cents = implied probability.\nRed card Jul 1 · Trump calls FIFA · ban un-banned Jul 5 · Belgium appeals. Kickoff tonight 8PM ET.",
       "output": "charts/balogun-red-card/timeline-meme.png",
       "events": [
-        {"ts": "2026-07-02T03:08:00Z", "label": "84¢?!\nopening chaos\non thin books", "dx": 75, "dy": -20},
-        {"ts": "2026-07-04T06:00:00Z", "label": "red card\nalready\npriced in", "dx": 0, "dy": 85, "line": false},
-        {"ts": "2026-07-05T17:01:00Z", "label": "FIFA suspends\nthe suspension", "sprite": "red_card", "dx": -40, "dy": 95},
-        {"ts": "2026-07-05T22:30:00Z", "label": "Belgium\nappeals", "dx": 30, "dy": -75}
+        {
+          "ts": "2026-07-02T03:08:00Z",
+          "label": "84¢?!\nopening chaos\non thin books",
+          "dx": 100,
+          "dy": -35
+        },
+        {
+          "ts": "2026-07-04T06:00:00Z",
+          "label": "red card\nalready\npriced in",
+          "dx": 0,
+          "dy": 85,
+          "line": false
+        },
+        {
+          "ts": "2026-07-05T17:01:00Z",
+          "label": "FIFA suspends\nthe suspension",
+          "sprite": "red_card",
+          "dx": -40,
+          "dy": 95
+        },
+        {
+          "ts": "2026-07-05T22:30:00Z",
+          "label": "Belgium\nappeals",
+          "dx": 45,
+          "dy": -55
+        }
+      ],
+      "ylim": [
+        40,
+        95
       ]
     },
     {
@@ -24,10 +50,35 @@
       "subtitle": "Kalshi \"USA advances past Belgium\" — price in cents = implied probability.\nRed card Jul 1 · Trump calls FIFA · ban un-banned Jul 5 · Belgium appeals. Kickoff tonight 8PM ET.",
       "output": "charts/balogun-red-card/timeline-editorial.png",
       "events": [
-        {"ts": "2026-07-02T03:08:00Z", "label": "Opens at 84¢ on thin books,\nsettles near 52¢ in minutes", "dx": 90, "dy": -15},
-        {"ts": "2026-07-04T06:00:00Z", "label": "With Balogun banned, USA\ndrifts to a coin flip", "dx": 0, "dy": 75, "line": false},
-        {"ts": "2026-07-05T17:01:00Z", "label": "Sun 1:01 PM ET: FIFA suspends\nthe ban — +4¢ on 311K contracts", "dx": -60, "dy": 85},
-        {"ts": "2026-07-05T22:30:00Z", "label": "Belgium granted an appeal;\nthe pop fades", "dx": 35, "dy": -65}
+        {
+          "ts": "2026-07-02T03:08:00Z",
+          "label": "Opens at 84¢ on thin books,\nsettles near 52¢ in minutes",
+          "dx": 120,
+          "dy": -30
+        },
+        {
+          "ts": "2026-07-04T06:00:00Z",
+          "label": "With Balogun banned, USA\ndrifts to a coin flip",
+          "dx": 0,
+          "dy": 75,
+          "line": false
+        },
+        {
+          "ts": "2026-07-05T17:01:00Z",
+          "label": "Sun 1:01 PM ET: FIFA suspends\nthe ban — +4¢ on 311K contracts",
+          "dx": -60,
+          "dy": 85
+        },
+        {
+          "ts": "2026-07-05T22:30:00Z",
+          "label": "Belgium granted an appeal;\nthe pop fades",
+          "dx": 55,
+          "dy": -50
+        }
+      ],
+      "ylim": [
+        40,
+        95
       ]
     },
     {
@@ -37,11 +88,26 @@
       "subtitle": "Sunday 1:01 PM ET — FIFA suspends Balogun's one-match ban \"for a probationary\nperiod of one year.\" Four cents of pandemonium on 311K contracts.",
       "start": "2026-07-05T16:15:00Z",
       "end": "2026-07-05T19:30:00Z",
-      "ylim": [45, 60],
+      "ylim": [
+        45,
+        60
+      ],
       "output": "charts/balogun-red-card/closeup-meme.png",
       "events": [
-        {"ts": "2026-07-05T17:01:00Z", "label": "the ban\nis un-banned", "sprite": "red_card", "dx": -85, "dy": 40},
-        {"ts": "2026-07-05T17:01:00Z", "label": "311K contracts\nin one minute", "dx": 105, "dy": -50, "line": false}
+        {
+          "ts": "2026-07-05T17:01:00Z",
+          "label": "the ban\nis un-banned",
+          "sprite": "red_card",
+          "dx": -85,
+          "dy": 40
+        },
+        {
+          "ts": "2026-07-05T17:01:00Z",
+          "label": "311K contracts\nin one minute",
+          "dx": 105,
+          "dy": -50,
+          "line": false
+        }
       ]
     },
     {
@@ -51,10 +117,18 @@
       "subtitle": "Sunday 1:01 PM ET — FIFA suspends Balogun's one-match ban \"for a probationary\nperiod of one year.\" Four cents of pandemonium on 311K contracts.",
       "start": "2026-07-05T16:15:00Z",
       "end": "2026-07-05T19:30:00Z",
-      "ylim": [45, 60],
+      "ylim": [
+        45,
+        60
+      ],
       "output": "charts/balogun-red-card/closeup-editorial.png",
       "events": [
-        {"ts": "2026-07-05T17:01:00Z", "label": "1:01 PM: FIFA statement drops —\n50¢ → 54¢ in two minutes", "dx": -105, "dy": 55}
+        {
+          "ts": "2026-07-05T17:01:00Z",
+          "label": "1:01 PM: FIFA statement drops —\n50¢ → 54¢ in two minutes",
+          "dx": -105,
+          "dy": 55
+        }
       ]
     }
   ]
