@@ -13,7 +13,7 @@
       "events": [
         {
           "ts": "2026-07-02T03:08:00Z",
-          "label": "84¢?!\nopening chaos\non thin books",
+          "label": "opening chaos:\nprints as high\nas 84¢",
           "dx": 100,
           "dy": -35
         },
@@ -52,7 +52,7 @@
       "events": [
         {
           "ts": "2026-07-02T03:08:00Z",
-          "label": "Opens at 84¢ on thin books,\nsettles near 52¢ in minutes",
+          "label": "Thin books at the open —\nfirst prints as high as 84¢",
           "dx": 120,
           "dy": -30
         },

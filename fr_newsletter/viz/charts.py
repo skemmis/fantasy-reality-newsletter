@@ -38,13 +38,20 @@ def _ts(val, tz: ZoneInfo) -> pd.Timestamp:
     return ts.tz_convert(tz)
 
 
-def _prep(df: pd.DataFrame, tz: ZoneInfo, start=None, end=None) -> pd.DataFrame:
+def _prep(df: pd.DataFrame, tz: ZoneInfo, start=None, end=None,
+          price_source: str = "mid") -> pd.DataFrame:
     out = df.copy()
     out.index = out.index.tz_convert(tz)
     if start is not None:
         out = out[out.index >= _ts(start, tz)]
     if end is not None:
         out = out[out.index <= _ts(end, tz)]
+    # "mid" (bid/ask midpoint, default) suppresses bid-ask bounce without
+    # lagging real repricing; "last" is the raw last-trade print.
+    if price_source not in (None, "last", "close") and price_source in out:
+        src = out[price_source]
+        if src.notna().any():
+            out["close"] = src
     return out
 
 
@@ -172,6 +179,7 @@ def price_timeline(
     ylim: tuple[float, float] | None = None,
     resample: str | None = None,
     show_volume: bool = False,
+    price_source: str = "mid",
     tz: ZoneInfo = ET,
 ) -> plt.Figure:
     """The saga chart: price over days, annotated with the story's beats.
@@ -179,10 +187,11 @@ def price_timeline(
     ``ylim=None`` best-guesses the y-axis from the data (padded, snapped to
     5¢); pass an explicit pair to override. ``show_volume`` adds a recessive
     volume subpanel. No resampling by default — resampling can silently erase
-    the short-lived spikes that are usually the story.
+    the short-lived spikes that are usually the story. ``price_source``:
+    "mid" (default, no bid-ask bounce) or "last" (raw trade prints).
     """
     theme.apply()
-    series = {k: _prep(df, tz, start, end) for k, df in _as_series(data).items()}
+    series = {k: _prep(df, tz, start, end, price_source) for k, df in _as_series(data).items()}
     series = {k: df for k, df in series.items() if not df.empty}
     if not series:
         raise ValueError("No data in the selected window.")
@@ -249,11 +258,12 @@ def market_closeup(
     start=None,
     end=None,
     ylim: tuple[float, float] | None = None,
+    price_source: str = "mid",
     tz: ZoneInfo = ET,
 ) -> plt.Figure:
     """Minute-level zoom on one moment: stepped price + volume subpanel."""
     theme.apply()
-    series = {k: _prep(df, tz, start, end) for k, df in _as_series(data).items()}
+    series = {k: _prep(df, tz, start, end, price_source) for k, df in _as_series(data).items()}
     series = {k: df for k, df in series.items() if not df.empty}
     if not series:
         raise ValueError("No data in the selected window.")

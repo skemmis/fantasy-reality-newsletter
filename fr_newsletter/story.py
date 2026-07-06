@@ -95,7 +95,11 @@ def render_story(story: dict, story_dir: Path | None = None, refresh: bool = Fal
         if show_no and len(tickers) == 1:
             label, df = next(iter(series.items()))
             no_df = df.copy()
-            no_df["close"] = 100 - no_df["close"]
+            for col in ("close", "mid"):
+                if col in no_df:
+                    no_df[col] = 100 - no_df[col]
+            if "bid" in no_df and "ask" in no_df:  # NO's book is YES's, mirrored
+                no_df["bid"], no_df["ask"] = 100 - no_df["ask"], 100 - no_df["bid"]
             series = {f"YES · {label}": df, f"NO · {label}": no_df}
 
         data = next(iter(series.values())) if len(series) == 1 else series

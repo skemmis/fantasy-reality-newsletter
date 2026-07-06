@@ -65,7 +65,9 @@ Chart-level knobs: `ylim` (tighten the y-axis around the action; omit for a
 best-guess), `start`/`end` (window the x-axis; naive timestamps are UTC),
 `title`, `subtitle`, `preset`, `resample`, `markets` (list of the event's
 market tickers to overlay as series), `show_volume` (volume subpanel on a
-timeline), `show_no` (plot YES and NO of a single market).
+timeline), `show_no` (plot YES and NO of a single market), `price_source`
+(`mid`, the default, plots the bid/ask midpoint — no bid-ask bounce, no lag;
+`last` plots raw trade prints).
 
 ## Sprites via Nano Banana
 

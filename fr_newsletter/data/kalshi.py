@@ -214,15 +214,20 @@ class KalshiClient:
         self._http.close()
 
 
+def _cents(val) -> float | None:
+    return float(val) * 100 if val is not None else None
+
+
 def _candles_to_df(rows: list[dict]) -> pd.DataFrame:
     records = []
     for c in rows:
         price = c.get("price") or {}
-        close = price.get("close_dollars")
         records.append(
             {
                 "ts": datetime.fromtimestamp(c["end_period_ts"], tz=timezone.utc),
-                "close": float(close) * 100 if close is not None else None,
+                "close": _cents(price.get("close_dollars")),
+                "bid": _cents((c.get("yes_bid") or {}).get("close_dollars")),
+                "ask": _cents((c.get("yes_ask") or {}).get("close_dollars")),
                 "volume": float(c.get("volume_fp") or 0),
                 "open_interest": float(c.get("open_interest_fp") or 0),
             }
@@ -231,8 +236,13 @@ def _candles_to_df(rows: list[dict]) -> pd.DataFrame:
     if df.empty:
         return df
     df = df.drop_duplicates(subset="ts").set_index("ts").sort_index()
-    # Between trades the API reports no close; carry the last trade price.
-    df["close"] = df["close"].ffill()
+    # Between trades the API reports no close; carry the last state forward.
+    for col in ("close", "bid", "ask"):
+        df[col] = df[col].ffill()
+    # Midpoint kills bid-ask bounce without lagging real moves; where the book
+    # is one-sided fall back to the last trade.
+    df["mid"] = (df["bid"] + df["ask"]) / 2
+    df["mid"] = df["mid"].fillna(df["close"])
     return df.dropna(subset=["close"])
 
 
@@ -248,7 +258,12 @@ def save_snapshot(path: Path, ref: MarketRef, df: pd.DataFrame) -> None:
         "market": ref.__dict__,
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "candles": [
-            {"ts": ts.isoformat(), "close": r.close, "volume": r.volume, "open_interest": r.open_interest}
+            {
+                "ts": ts.isoformat(), "close": r.close, "volume": r.volume,
+                "open_interest": r.open_interest,
+                "bid": None if pd.isna(b := getattr(r, "bid", None)) else b,
+                "ask": None if pd.isna(a := getattr(r, "ask", None)) else a,
+            }
             for ts, r in df.iterrows()
         ],
     }
@@ -261,4 +276,8 @@ def load_snapshot(path: Path) -> tuple[MarketRef, pd.DataFrame, str]:
     df = pd.DataFrame.from_records(payload["candles"])
     df["ts"] = pd.to_datetime(df["ts"])
     df = df.set_index("ts").sort_index()
+    if "bid" in df and "ask" in df:  # older snapshots predate bid/ask
+        df["mid"] = ((df["bid"] + df["ask"]) / 2).fillna(df["close"])
+    else:
+        df["mid"] = df["close"]
     return ref, df, payload["fetched_at"]
