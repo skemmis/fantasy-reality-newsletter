@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,10 @@ BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 INTERVALS = {"1m": 1, "1h": 60, "1d": 1440}
 # Max candles the API returns per request.
 _MAX_CANDLES = 5000
+
+# Short-lived candle cache so a preview UI can re-render without refetching.
+_CACHE_TTL_S = 60
+_candle_cache: dict[tuple, tuple[float, pd.DataFrame]] = {}
 
 
 @dataclass
@@ -74,6 +79,33 @@ class KalshiClient:
         r.raise_for_status()
         return r.json()["event"]
 
+    def list_markets(self, ref: str) -> list[dict]:
+        """Summaries of every market in an event, highest volume first.
+
+        Each entry: ``ticker``, ``label`` (the yes-side subtitle, e.g. "USA
+        advances"), ``title``, ``last_price`` (cents), ``volume``,
+        ``open_time``, ``close_time``, ``status``.
+        """
+        event_ticker, _ = parse_market_ref(ref)
+        event = self.get_event(event_ticker)
+        out = []
+        for m in event.get("markets") or []:
+            last = m.get("last_price_dollars")
+            out.append(
+                {
+                    "ticker": m["ticker"],
+                    "label": m.get("yes_sub_title") or m["ticker"].rsplit("-", 1)[-1],
+                    "title": m.get("title", ""),
+                    "last_price": float(last) * 100 if last is not None else None,
+                    "volume": float(m.get("volume_fp") or 0),
+                    "open_time": m.get("open_time"),
+                    "close_time": m.get("close_time"),
+                    "status": m.get("status", ""),
+                }
+            )
+        out.sort(key=lambda m: -m["volume"])
+        return out
+
     def resolve(self, ref: str) -> MarketRef:
         """Resolve a URL/ticker to a concrete market.
 
@@ -115,6 +147,13 @@ class KalshiClient:
         """
         minutes = INTERVALS[interval]
         start_ts, end_ts = int(start.timestamp()), int(end.timestamp())
+
+        # Serve repeat preview renders from the short-lived cache.
+        key = (ref.market_ticker, interval, start_ts, end_ts // _CACHE_TTL_S)
+        hit = _candle_cache.get(key)
+        if hit and time.monotonic() - hit[0] < _CACHE_TTL_S:
+            return hit[1].copy()
+
         rows: list[dict] = []
         cursor = start_ts
         while cursor < end_ts:
@@ -126,7 +165,11 @@ class KalshiClient:
             r.raise_for_status()
             rows.extend(r.json().get("candlesticks") or [])
             cursor = chunk_end
-        return _candles_to_df(rows)
+        df = _candles_to_df(rows)
+        if len(_candle_cache) > 32:
+            _candle_cache.clear()
+        _candle_cache[key] = (time.monotonic(), df.copy())
+        return df
 
     def close(self) -> None:
         self._http.close()

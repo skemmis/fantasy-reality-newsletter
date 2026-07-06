@@ -1,17 +1,17 @@
 """Chart builders: price timeline and market close-up.
 
-Both take a candle DataFrame (index: tz-aware UTC timestamps; columns:
-``close`` in cents, ``volume`` in contracts) and a list of ``Event``s, and
-return a matplotlib Figure styled by ``theme``.
+Both accept either a single candle DataFrame (index: tz-aware UTC timestamps;
+columns: ``close`` in cents, ``volume`` in contracts) or an ordered mapping of
+``label -> DataFrame`` for multi-series charts, plus a list of ``Event``s.
 
-Dataviz rules honored here: single series -> no legend (the title names it);
-2px line; hairline solid grid; volume lives in its own subpanel (never a
-second y-axis); text wears ink tokens, never the series color; values are
-direct-labeled selectively (the endpoint and the event moves).
+Dataviz rules honored here: one series -> no legend (the title names it), two
+or more -> legend always, colored by the validated palette slots in fixed
+order; 2.5px lines; hairline solid grid; volume lives in its own subpanel
+(never a second y-axis); text wears ink tokens, never the series color;
+values are direct-labeled selectively (endpoints and the annotated moves).
 """
 from __future__ import annotations
 
-from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import matplotlib.dates as mdates
@@ -24,14 +24,46 @@ from .events import Event
 ET = ZoneInfo("America/New_York")
 
 
+def _as_series(data) -> dict[str, pd.DataFrame]:
+    if isinstance(data, pd.DataFrame):
+        return {"": data}
+    return dict(data)
+
+
+def _ts(val, tz: ZoneInfo) -> pd.Timestamp:
+    """Parse a timestamp; naive values are treated as UTC."""
+    ts = pd.Timestamp(val)
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    return ts.tz_convert(tz)
+
+
 def _prep(df: pd.DataFrame, tz: ZoneInfo, start=None, end=None) -> pd.DataFrame:
     out = df.copy()
     out.index = out.index.tz_convert(tz)
     if start is not None:
-        out = out[out.index >= pd.Timestamp(start).tz_convert(tz)]
+        out = out[out.index >= _ts(start, tz)]
     if end is not None:
-        out = out[out.index <= pd.Timestamp(end).tz_convert(tz)]
+        out = out[out.index <= _ts(end, tz)]
     return out
+
+
+def _auto_ylim(series: dict[str, pd.DataFrame]) -> tuple[float, float]:
+    """Best-guess y-axis: data range padded, snapped to 5s, clamped to 0-100."""
+    lo = min(df["close"].min() for df in series.values())
+    hi = max(df["close"].max() for df in series.values())
+    lo = max(0.0, 5 * ((lo - 2) // 5))
+    hi = min(100.0, 5 * -((-(hi + 2)) // 5))
+    if hi - lo < 10:  # never so tight that noise looks like drama
+        pad = (10 - (hi - lo)) / 2
+        lo, hi = max(0.0, lo - pad), min(100.0, hi + pad)
+    return float(lo), float(hi)
+
+
+def _nice_cents_axis(ax, ylim: tuple[float, float]) -> None:
+    span = ylim[1] - ylim[0]
+    step = next(s for s in (1, 2, 5, 10, 25) if span / s <= 7)
+    theme.cents_axis(ax, *ylim, step=step)
 
 
 def _day_axis(ax, tz: ZoneInfo) -> None:
@@ -51,8 +83,9 @@ def _time_axis(ax, tz: ZoneInfo, span_hours: float) -> None:
 
 
 def _annotate_events(ax, df: pd.DataFrame, events: list[Event], preset: str, tz: ZoneInfo) -> None:
+    """Anchor events on the primary (first) series."""
     for ev in events:
-        x = pd.Timestamp(ev.ts).tz_convert(tz)
+        x = _ts(ev.ts, tz)
         if ev.line:
             theme.event_line(ax, x)
         if ev.anchor == "top":
@@ -67,6 +100,55 @@ def _annotate_events(ax, df: pd.DataFrame, events: list[Event], preset: str, tz:
                       sprite=ev.sprite, sprite_zoom=ev.zoom)
 
 
+def _end_markers(ax, series: dict[str, pd.DataFrame], ylim) -> None:
+    """Endpoint dot + value per series, nudged apart when endpoints collide."""
+    ends = [(label, df.index[-1], float(df["close"].iloc[-1])) for label, df in series.items()]
+    min_gap = (ylim[1] - ylim[0]) * 0.045
+    placed: list[float] = []
+    for i, (label, x, y) in enumerate(ends):
+        color = theme.SERIES[i % len(theme.SERIES)]
+        label_y = y
+        while any(abs(label_y - p) < min_gap for p in placed):
+            label_y -= min_gap
+        placed.append(label_y)
+        theme.end_marker(ax, x, y, f"{y:.0f}¢", color=color, label_y=label_y)
+
+
+def _legend(ax) -> None:
+    leg = ax.legend(
+        loc="best", prop={"family": theme.FONT_MONO, "size": 12},
+        frameon=True, fancybox=False, framealpha=1.0,
+        facecolor=theme.CARD, edgecolor=theme.INK, borderpad=0.8,
+    )
+    leg.get_frame().set_linewidth(1.6)
+    leg.set_zorder(8)
+
+
+def _volume_panel(axv, series: dict[str, pd.DataFrame], events: list[Event], tz: ZoneInfo,
+                  per_label: str, n_target: int = 170) -> None:
+    """Recessive volume bars (summed across shown series), own panel & axis."""
+    vol = pd.concat([df["volume"] for df in series.values()], axis=1).sum(axis=1)
+    span_s = (vol.index[-1] - vol.index[0]).total_seconds() or 1
+    bucket_s = span_s / n_target
+    rule = next((r for r, s in (("1min", 60), ("5min", 300), ("15min", 900), ("1h", 3600),
+                                ("4h", 14400), ("1D", 86400)) if bucket_s <= s), "1D")
+    binned = vol.resample(rule).sum()
+
+    event_bins = {_ts(ev.ts, tz).floor(rule) for ev in events}
+    width = (binned.index[1] - binned.index[0]) * 0.8 if len(binned) > 1 else None
+    bars = axv.bar(binned.index, binned.values, width=width, linewidth=0, zorder=3)
+    for ts, bar in zip(binned.index, bars):
+        emphasized = ts in event_bins
+        bar.set_facecolor(theme.YES if emphasized else theme.VOLUME_BAR)
+        bar.set_alpha(0.9 if emphasized else 0.22)
+    axv.set_ylim(0, (binned.max() or 1) * 1.15)
+    axv.yaxis.set_major_formatter(
+        lambda v, _: f"{v/1e6:,.1f}M" if v >= 1e6 else (f"{v/1000:,.0f}K" if v >= 1000 else f"{v:.0f}")
+    )
+    axv.text(0.012, 0.90, f"volume (contracts/{per_label or rule})", transform=axv.transAxes,
+             family=theme.FONT_MONO, fontsize=12, color=theme.MUTED_TEXT, va="top")
+
+
 def _source_line(ref_ticker: str, as_of: str | None, tz_label: str = "ET") -> str:
     src = f"Source: Kalshi · {ref_ticker}"
     if as_of:
@@ -76,7 +158,7 @@ def _source_line(ref_ticker: str, as_of: str | None, tz_label: str = "ET") -> st
 
 
 def price_timeline(
-    df: pd.DataFrame,
+    data,
     events: list[Event],
     *,
     title: str,
@@ -87,37 +169,64 @@ def price_timeline(
     yes_label: str | None = None,
     start=None,
     end=None,
-    ylim: tuple[float, float] = (0, 100),
+    ylim: tuple[float, float] | None = None,
     resample: str | None = None,
+    show_volume: bool = False,
     tz: ZoneInfo = ET,
 ) -> plt.Figure:
     """The saga chart: price over days, annotated with the story's beats.
 
-    No area fill and no resampling by default: a probability line reads
-    cleanest bare, and resampling can silently erase the short-lived spikes
-    that are usually the story.
+    ``ylim=None`` best-guesses the y-axis from the data (padded, snapped to
+    5¢); pass an explicit pair to override. ``show_volume`` adds a recessive
+    volume subpanel. No resampling by default — resampling can silently erase
+    the short-lived spikes that are usually the story.
     """
     theme.apply()
-    data = _prep(df, tz, start, end)
+    series = {k: _prep(df, tz, start, end) for k, df in _as_series(data).items()}
+    series = {k: df for k, df in series.items() if not df.empty}
+    if not series:
+        raise ValueError("No data in the selected window.")
     if resample:
-        data = data.resample(resample).agg({"close": "last", "volume": "sum"}).dropna(subset=["close"])
+        series = {
+            k: df.resample(resample).agg({"close": "last", "volume": "sum"}).dropna(subset=["close"])
+            for k, df in series.items()
+        }
 
-    fig = plt.figure(figsize=(14.56, 8.6))
-    ax = fig.add_axes([0.06, 0.11, 0.88, 0.64])
+    if show_volume:
+        fig = plt.figure(figsize=(14.56, 9.6))
+        ax = fig.add_axes([0.06, 0.345, 0.88, 0.435])
+        axv = fig.add_axes([0.06, 0.115, 0.88, 0.18], sharex=ax)
+        theme.pixel_shadow(fig, axv)
+    else:
+        fig = plt.figure(figsize=(14.56, 8.6))
+        ax, axv = fig.add_axes([0.06, 0.11, 0.88, 0.64]), None
     theme.pixel_shadow(fig, ax)
 
-    ax.plot(data.index, data["close"], color=theme.YES, zorder=3)
+    for i, (label, df) in enumerate(series.items()):
+        ax.plot(df.index, df["close"], color=theme.SERIES[i % len(theme.SERIES)],
+                zorder=3, label=label or None)
 
-    span = ylim[1] - ylim[0]
-    step = next(s for s in (1, 2, 5, 10, 25) if span / s <= 7)
-    theme.cents_axis(ax, *ylim, step=step)
-    _day_axis(ax, tz)
-    ax.set_xlim(data.index[0], data.index[-1] + (data.index[-1] - data.index[0]) * 0.05)
+    if ylim is None:
+        ylim = _auto_ylim(series)
+    _nice_cents_axis(ax, ylim)
 
-    _annotate_events(ax, data, events, preset, tz)
+    lo_x = min(df.index[0] for df in series.values())
+    hi_x = max(df.index[-1] for df in series.values())
+    ax.set_xlim(lo_x, hi_x + (hi_x - lo_x) * 0.05)
 
-    last_x, last_y = data.index[-1], data["close"].iloc[-1]
-    theme.end_marker(ax, last_x, last_y, f"{last_y:.0f}¢")
+    primary = next(iter(series.values()))
+    _annotate_events(ax, primary, events, preset, tz)
+    _end_markers(ax, series, ylim)
+    if len(series) > 1:
+        _legend(ax)
+
+    if axv is not None:
+        plt.setp(ax.get_xticklabels(), visible=False)
+        ax.tick_params(axis="x", length=0)
+        _volume_panel(axv, series, events, tz, per_label="")
+        _day_axis(axv, tz)
+    else:
+        _day_axis(ax, tz)
 
     if yes_label:
         ax.text(0.012, 0.965, yes_label, transform=ax.transAxes, family=theme.FONT_MONO,
@@ -129,7 +238,7 @@ def price_timeline(
 
 
 def market_closeup(
-    df: pd.DataFrame,
+    data,
     events: list[Event],
     *,
     title: str,
@@ -144,7 +253,10 @@ def market_closeup(
 ) -> plt.Figure:
     """Minute-level zoom on one moment: stepped price + volume subpanel."""
     theme.apply()
-    data = _prep(df, tz, start, end)
+    series = {k: _prep(df, tz, start, end) for k, df in _as_series(data).items()}
+    series = {k: df for k, df in series.items() if not df.empty}
+    if not series:
+        raise ValueError("No data in the selected window.")
 
     fig = plt.figure(figsize=(14.56, 9.6))
     ax = fig.add_axes([0.06, 0.345, 0.88, 0.435])
@@ -152,43 +264,29 @@ def market_closeup(
     theme.pixel_shadow(fig, ax)
     theme.pixel_shadow(fig, axv)
 
-    ax.step(data.index, data["close"], where="post", color=theme.YES, zorder=3)
-    ax.fill_between(data.index, 0, data["close"], step="post", color=theme.YES,
-                    alpha=0.08, zorder=2)
+    for i, (label, df) in enumerate(series.items()):
+        color = theme.SERIES[i % len(theme.SERIES)]
+        ax.step(df.index, df["close"], where="post", color=color, zorder=3, label=label or None)
+        if len(series) == 1:
+            ax.fill_between(df.index, 0, df["close"], step="post", color=color,
+                            alpha=0.08, zorder=2)
 
     if ylim is None:
-        lo = max(0, 5 * ((data["close"].min() - 2) // 5))
-        hi = min(100, 5 * -((-(data["close"].max() + 2)) // 5))
-        ylim = (float(lo), float(hi))
-    span = ylim[1] - ylim[0]
-    step = next(s for s in (1, 2, 5, 10, 25) if span / s <= 6)
-    theme.cents_axis(ax, *ylim, step=step)
+        ylim = _auto_ylim(series)
+    _nice_cents_axis(ax, ylim)
     plt.setp(ax.get_xticklabels(), visible=False)
     ax.tick_params(axis="x", length=0)
 
-    # Volume: magnitude in its own recessive panel — never a dual axis.
-    # Emphasis form: the minute(s) belonging to annotated events wear the
-    # series teal; everything else stays context-gray.
-    event_minutes = {pd.Timestamp(ev.ts).tz_convert(tz).floor("min") for ev in events}
-    colors = [theme.YES if ts.floor("min") in event_minutes else theme.VOLUME_BAR
-              for ts in data.index]
-    alphas = [0.9 if ts.floor("min") in event_minutes else 0.22 for ts in data.index]
-    width = (data.index[1] - data.index[0]) * 0.8 if len(data) > 1 else None
-    bars = axv.bar(data.index, data["volume"], width=width, linewidth=0, zorder=3)
-    for bar, c, a in zip(bars, colors, alphas):
-        bar.set_facecolor(c)
-        bar.set_alpha(a)
-    axv.set_ylim(0, data["volume"].max() * 1.15 or 1)
-    axv.yaxis.set_major_formatter(lambda v, _: f"{v/1000:,.0f}K" if v >= 1000 else f"{v:.0f}")
-    axv.text(0.012, 0.90, "volume (contracts/min)", transform=axv.transAxes,
-             family=theme.FONT_MONO, fontsize=12, color=theme.MUTED_TEXT, va="top")
-    span_h = (data.index[-1] - data.index[0]).total_seconds() / 3600
+    span_h = (max(df.index[-1] for df in series.values())
+              - min(df.index[0] for df in series.values())).total_seconds() / 3600
+    _volume_panel(axv, series, events, tz, per_label="min", n_target=400)
     _time_axis(axv, tz, span_h)
 
-    _annotate_events(ax, data, events, preset, tz)
-
-    last_x, last_y = data.index[-1], data["close"].iloc[-1]
-    theme.end_marker(ax, last_x, last_y, f"{last_y:.0f}¢")
+    primary = next(iter(series.values()))
+    _annotate_events(ax, primary, events, preset, tz)
+    _end_markers(ax, series, ylim)
+    if len(series) > 1:
+        _legend(ax)
 
     theme.title_block(fig, title, subtitle, preset=preset)
     theme.footer(fig, _source_line(ticker, as_of))

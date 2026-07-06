@@ -142,11 +142,16 @@ def cents_axis(ax, lo: float = 0, hi: float = 100, step: float = 25) -> None:
         ax.axhline(50, color=MUTED_TEXT, linewidth=1.0, alpha=0.55, zorder=1.2)
 
 
-def end_marker(ax, x, y, label: str, color: str = YES) -> None:
-    """>=8px end dot with a 2px surface ring + direct value label."""
+def end_marker(ax, x, y, label: str, color: str = YES, label_y=None) -> None:
+    """>=8px end dot with a 2px surface ring + direct value label.
+
+    ``label_y`` places the text at a different height than the dot (collision
+    nudging for converging multi-series endpoints).
+    """
     ax.scatter([x], [y], s=130, color=color, edgecolor=CARD, linewidth=2, zorder=6,
                clip_on=False)
-    ax.annotate(label, (x, y), xytext=(12, 0), textcoords="offset points",
+    ax.annotate(label, (x, label_y if label_y is not None else y), xytext=(12, 0),
+                textcoords="offset points",
                 family=FONT_MONO, fontweight="bold", fontsize=17, color=INK,
                 va="center", ha="left", zorder=6, annotation_clip=False)
 

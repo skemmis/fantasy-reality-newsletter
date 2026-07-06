@@ -11,8 +11,20 @@ style, and drafting newsletter outlines.
 
 ### Option A: web UI (Railway)
 
-A small web app: paste a Kalshi market URL, pick chart type + preset, list the
-events to annotate, download the PNG.
+A three-step wizard with a live preview:
+
+1. **Market** — paste a Kalshi *event* URL (events often contain several
+   markets); the markets are listed with volumes, and the tool best-guesses
+   the axes, window, and title. Check several markets to overlay them as
+   series.
+2. **Frame** — adjust y-axis, x-window, titles, preset, smoothing; toggle a
+   volume panel or a YES + NO view.
+3. **Annotations** — add timestamped callouts, with optional sprites
+   (generate new ones inline via Nano Banana).
+
+The preview is the real PNG, re-rendered after every change. Save downloads
+the chart and the story JSON that reproduces it — commit that JSON to
+`stories/` to make it re-runnable by the Action.
 
 Deploy once (needs a [Railway](https://railway.app) account):
 1. Railway → **New Project → Deploy from GitHub repo** → pick this repo.
@@ -49,8 +61,11 @@ the charts that tell it. See `stories/balogun-red-card/story.json`:
 - `sprites` (optional) — `{ "name": "subject description" }`; missing sprites
   are generated with Nano Banana (see below) before rendering
 
-Chart-level knobs: `ylim` (tighten the y-axis around the action), `start`/`end`
-(window the x-axis), `title`, `subtitle`, `preset`, `resample`.
+Chart-level knobs: `ylim` (tighten the y-axis around the action; omit for a
+best-guess), `start`/`end` (window the x-axis; naive timestamps are UTC),
+`title`, `subtitle`, `preset`, `resample`, `markets` (list of the event's
+market tickers to overlay as series), `show_volume` (volume subpanel on a
+timeline), `show_no` (plot YES and NO of a single market).
 
 ## Sprites via Nano Banana
 

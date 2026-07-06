@@ -8,147 +8,293 @@
 <style>
   :root {
     --ink: #17122b; --canvas: #e9e5dd; --card: #f9f7f0; --magenta: #c8327a;
-    --teal: #128a72; --muted: #544a6b; --gold: #ffc37a;
+    --teal: #128a72; --muted: #544a6b; --gold: #ffc37a; --pink: #e84581;
   }
   * { box-sizing: border-box; border-radius: 0 !important; }
   body {
-    margin: 0; padding: 2rem 1rem; background: var(--canvas); color: var(--ink);
+    margin: 0; padding: 1.5rem 1rem; background: var(--canvas); color: var(--ink);
     font-family: 'Space Mono', monospace;
     background-image:
       radial-gradient(42rem 42rem at 10% 16%, rgba(200,50,122,0.10), transparent 60%),
       radial-gradient(46rem 46rem at 90% 80%, rgba(18,138,114,0.10), transparent 62%);
   }
-  .wrap { max-width: 880px; margin: 0 auto; }
-  h1 { font-family: 'Press Start 2P', cursive; font-size: 1.05rem; letter-spacing: -1px;
+  .wrap { max-width: 1400px; margin: 0 auto; }
+  h1 { font-family: 'Press Start 2P', cursive; font-size: 1rem; letter-spacing: -1px;
        text-transform: uppercase; line-height: 1.8; }
   h1 .fr { color: var(--magenta); }
+  h2 { font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-transform: uppercase;
+       margin: 0 0 0.5rem; }
+  h2 .step { color: var(--magenta); }
+  .cols { display: grid; grid-template-columns: 460px 1fr; gap: 1.25rem; align-items: start; }
+  @media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
   .card { background: var(--card); border: 2px solid var(--ink);
-          box-shadow: 6px 6px 0 rgba(0,0,0,0.15); padding: 1.5rem; margin-bottom: 2rem; }
-  label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--muted);
-          margin: 1rem 0 0.25rem; }
+          box-shadow: 6px 6px 0 rgba(0,0,0,0.15); padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; }
+  label { display: block; font-size: 0.68rem; text-transform: uppercase; color: var(--muted);
+          margin: 0.7rem 0 0.2rem; }
   input, select, textarea {
-    width: 100%; padding: 0.5rem 0.6rem; font-family: 'Space Mono', monospace; font-size: 0.9rem;
+    width: 100%; padding: 0.4rem 0.55rem; font-family: 'Space Mono', monospace; font-size: 0.85rem;
     background: #fff; border: 2px solid var(--ink); color: var(--ink);
   }
-  textarea { min-height: 7rem; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
-  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1rem; }
+  input[type=checkbox] { width: auto; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.8rem; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 0.8rem; }
   button {
-    margin-top: 1.5rem; font-family: 'Press Start 2P', cursive; font-size: 0.8rem;
-    text-transform: uppercase; padding: 0.9rem 1.4rem; cursor: pointer;
-    background: var(--magenta); color: #fff3d6; border: 2px solid var(--ink);
-    box-shadow: 4px 4px 0 var(--ink);
+    font-family: 'Press Start 2P', cursive; font-size: 0.62rem; text-transform: uppercase;
+    padding: 0.65rem 0.9rem; cursor: pointer; background: var(--magenta); color: #fff3d6;
+    border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); margin-top: 0.9rem;
   }
-  button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
-  .error { background: #ffd6e9; border: 2px solid var(--ink); padding: 0.75rem 1rem;
-           margin-bottom: 1rem; font-size: 0.85rem; }
-  .result img { width: 100%; border: 2px solid var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,0.15); }
-  .hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
-  a.dl { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--magenta); }
+  button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+  button.alt { background: var(--teal); }
+  button.ghost { background: var(--card); color: var(--ink); }
+  .error { background: #ffd6e9; border: 2px solid var(--ink); padding: 0.6rem 0.9rem;
+           margin-bottom: 1rem; font-size: 0.8rem; white-space: pre-wrap; }
+  .hint { font-size: 0.68rem; color: var(--muted); margin-top: 0.2rem; }
+  #preview img { width: 100%; border: 2px solid var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,0.15); }
+  #preview { position: sticky; top: 1rem; }
+  #status { font-size: 0.7rem; color: var(--muted); min-height: 1.2em; margin: 0.4rem 0; }
+  .mkt { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.8rem; margin: 0.25rem 0; }
+  .mkt .vol { color: var(--muted); font-size: 0.7rem; margin-left: auto; }
+  .ann { border: 2px solid var(--ink); padding: 0.6rem; margin: 0.6rem 0; background: #fff; }
+  .ann .row4 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0 0.5rem; }
+  .ann button { margin-top: 0.4rem; padding: 0.4rem 0.6rem; }
+  a.dl { display: inline-block; margin: 0.6rem 1rem 0 0; font-weight: 700; color: var(--magenta);
+         font-size: 0.85rem; }
+  details.legacy summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); }
+  .spriteimg { image-rendering: pixelated; height: 64px; vertical-align: middle; margin-left: 0.6rem; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1><span class="fr">Fantasy Reality</span> · Chart Generator</h1>
-
   {% if error %}<div class="error">⚠ {{ error }}</div>{% endif %}
 
-  {% if png %}
-  <div class="card result">
-    <img src="data:image/png;base64,{{ png }}" alt="Generated chart">
-    <a class="dl" download="fantasy-reality-chart.png" href="data:image/png;base64,{{ png }}">↓ download PNG</a>
-  </div>
-  {% endif %}
+  <div class="cols">
+  <div id="controls">
 
-  {% for item in pngs %}
-  <div class="card result">
-    <img src="data:image/png;base64,{{ item.b64 }}" alt="{{ item.name }}">
-    <a class="dl" download="{{ item.name }}" href="data:image/png;base64,{{ item.b64 }}">↓ {{ item.name }}</a>
-  </div>
-  {% endfor %}
+    <div class="card">
+      <h2><span class="step">Step 1</span> · Market</h2>
+      <label>Kalshi event or market URL (or ticker)</label>
+      <input id="ref" placeholder="https://kalshi.com/markets/…">
+      <button id="load" type="button">▸ Load market</button>
+      <div id="marketList"></div>
+      <div class="hint" id="marketHint" style="display:none">Check several markets to overlay them as series. The first checked market anchors annotations.</div>
+    </div>
 
-  {% if sprite_png %}
-  <div class="card result">
-    <p style="font-size:0.8rem">Sprite saved to the library — reference it by name in any event.</p>
-    <img style="width:auto;image-rendering:pixelated;height:96px" src="data:image/png;base64,{{ sprite_png }}" alt="Generated sprite">
-  </div>
-  {% endif %}
-
-  <form class="card" method="post" action="/chart">
-    <label>Kalshi market (URL or ticker)</label>
-    <input name="market" required placeholder="https://kalshi.com/markets/…" value="{{ form.market or '' }}">
-
-    <div class="row3">
-      <div>
-        <label>Chart type</label>
-        <select name="chart_type">
-          <option value="timeline" {% if form.chart_type == 'timeline' %}selected{% endif %}>timeline (days)</option>
-          <option value="closeup" {% if form.chart_type == 'closeup' %}selected{% endif %}>close-up (minutes + volume)</option>
-        </select>
+    <div class="card" id="frameCard" style="display:none">
+      <h2><span class="step">Step 2</span> · Frame</h2>
+      <div class="row3">
+        <div>
+          <label>Chart type</label>
+          <select id="ctype">
+            <option value="timeline">timeline (days)</option>
+            <option value="closeup">close-up (minutes + volume)</option>
+          </select>
+        </div>
+        <div>
+          <label>Preset</label>
+          <select id="preset">
+            <option value="editorial">editorial</option>
+            <option value="meme">meme</option>
+          </select>
+        </div>
+        <div>
+          <label>Smoothing</label>
+          <select id="resample">
+            <option value="">none (every trade)</option>
+            <option value="5min">5 min</option>
+            <option value="15min">15 min</option>
+            <option value="1h">1 hour</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label>Preset</label>
-        <select name="preset">
-          <option value="editorial" {% if form.preset == 'editorial' %}selected{% endif %}>editorial</option>
-          <option value="meme" {% if form.preset == 'meme' %}selected{% endif %}>meme</option>
-        </select>
+      <label>Title</label>
+      <input id="title">
+      <label>Subtitle</label>
+      <input id="subtitle" placeholder="context line under the title">
+      <div class="row">
+        <div>
+          <label>Y-axis min (¢)</label>
+          <input id="ylo" type="number" min="0" max="100">
+        </div>
+        <div>
+          <label>Y-axis max (¢)</label>
+          <input id="yhi" type="number" min="0" max="100">
+        </div>
       </div>
-      <div>
-        <label>Y-limits (optional, e.g. 45 60)</label>
-        <input name="ylim" value="{{ form.ylim or '' }}">
+      <div class="row">
+        <div>
+          <label>X from (UTC)</label>
+          <input id="xstart" placeholder="2026-07-02 03:00">
+        </div>
+        <div>
+          <label>X to (UTC, blank = latest)</label>
+          <input id="xend" placeholder="">
+        </div>
+      </div>
+      <div class="row" style="margin-top:0.8rem">
+        <label style="margin:0"><input type="checkbox" id="showvol"> overlay volume panel</label>
+        <label style="margin:0"><input type="checkbox" id="showno"> show YES and NO</label>
       </div>
     </div>
 
-    <label>Title</label>
-    <input name="title" placeholder="defaults to the market title" value="{{ form.title or '' }}">
-    <label>Subtitle (\n for line break)</label>
-    <input name="subtitle" value="{{ form.subtitle or '' }}">
-
-    <div class="row3">
-      <div>
-        <label>Fetch data since (UTC)</label>
-        <input name="data_start" placeholder="2026-07-02 03:00" value="{{ form.data_start or '' }}">
-        <div class="hint">default: last 7 days</div>
+    <div class="card" id="annCard" style="display:none">
+      <h2><span class="step">Step 3</span> · Annotations</h2>
+      <div id="annList"></div>
+      <button type="button" class="ghost" id="addAnn">+ add annotation</button>
+      <hr style="border:1px solid var(--canvas); margin:1rem 0">
+      <label>Generate a sprite (Nano Banana — needs GEMINI_API_KEY)</label>
+      <div class="row">
+        <input id="sprName" placeholder="name e.g. red_card_ref">
+        <input id="sprSubject" placeholder="a referee holding up a red card">
       </div>
-      <div>
-        <label>Window start (UTC, optional)</label>
-        <input name="start" value="{{ form.start or '' }}">
-      </div>
-      <div>
-        <label>Window end (UTC, optional)</label>
-        <input name="end" value="{{ form.end or '' }}">
-      </div>
+      <button type="button" class="alt" id="makeSprite">▸ Generate sprite</button>
+      <span id="sprResult"></span>
     </div>
 
-    <label>Events — one per line: time | label | sprite | dx | dy | line</label>
-    <textarea name="events" placeholder="2026-07-05 17:01 UTC | FIFA suspends\nthe suspension | red_card | -40 | 95">{{ form.events or '' }}</textarea>
-    <div class="hint">sprite: red_card (or blank) · dx/dy nudge the label in points · line=false hides the vertical marker</div>
-
-    <button type="submit">▸ Generate chart</button>
-  </form>
-
-  <form class="card" method="post" action="/story">
-    <h1 style="font-size:0.8rem">Story mode</h1>
-    <label>Paste a full story JSON (same shape as stories/*.json) — renders every chart in it</label>
-    <textarea name="story_json" style="min-height:14rem" placeholder='{"market": "…", "data_start": "…", "charts": [...]}'>{{ story_json }}</textarea>
-    <button type="submit">▸ Render story</button>
-  </form>
-
-  <form class="card" method="post" action="/sprite">
-    <h1 style="font-size:0.8rem">Sprite generator <span style="color:var(--muted)">(Nano Banana)</span></h1>
-    <div class="row">
-      <div>
-        <label>Sprite name</label>
-        <input name="sprite_name" required placeholder="crying_ref">
-      </div>
-      <div>
-        <label>Subject</label>
-        <input name="sprite_subject" required placeholder="a crying soccer referee holding a whistle">
-      </div>
+    <div class="card" id="saveCard" style="display:none">
+      <h2>Save</h2>
+      <a class="dl" id="dlPng" download="fantasy-reality-chart.png">↓ chart PNG</a>
+      <a class="dl" id="dlJson" download="story.json">↓ story JSON</a>
+      <div class="hint">Commit the story JSON to <code>stories/&lt;slug&gt;/story.json</code> (GitHub web editor) to make it re-runnable by the Action.</div>
     </div>
-    <div class="hint">Requires the GEMINI_API_KEY environment variable. The result is styled to the house pixel-art palette automatically.</div>
-    <button type="submit">▸ Generate sprite</button>
-  </form>
+
+    <details class="legacy card">
+      <summary>Story mode — paste a full story JSON</summary>
+      <form method="post" action="/story">
+        <textarea name="story_json" style="min-height:12rem">{{ story_json }}</textarea>
+        <button type="submit">▸ Render story</button>
+      </form>
+      {% for item in pngs %}
+        <img style="width:100%;margin-top:0.8rem" src="data:image/png;base64,{{ item.b64 }}" alt="{{ item.name }}">
+        <a class="dl" download="{{ item.name }}" href="data:image/png;base64,{{ item.b64 }}">↓ {{ item.name }}</a>
+      {% endfor %}
+    </details>
+  </div>
+
+  <div id="preview">
+    <div id="status"></div>
+    <div class="card" id="previewCard" style="display:none"><img id="previewImg" alt="chart preview"></div>
+  </div>
+  </div>
 </div>
+
+<script>
+const $ = id => document.getElementById(id);
+let markets = [], eventRef = "", suggest = {}, renderTimer = null, inflight = null;
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+$('load').onclick = async () => {
+  status('resolving event…');
+  try {
+    const r = await fetch('/api/resolve', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ref: $('ref').value})});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    eventRef = $('ref').value; markets = j.markets; suggest = j.suggest;
+    $('marketList').innerHTML = markets.map((m, i) => `
+      <div class="mkt">
+        <input type="checkbox" class="mktbox" value="${esc(m.ticker)}" ${m.ticker === j.primary ? 'checked' : ''}>
+        <span>${esc(m.label)}${m.last_price != null ? ' · ' + Math.round(m.last_price) + '¢' : ''}</span>
+        <span class="vol">${Math.round(m.volume).toLocaleString()} vol</span>
+      </div>`).join('');
+    $('marketHint').style.display = 'block';
+    document.querySelectorAll('.mktbox').forEach(b => b.onchange = queueRender);
+    $('title').value = suggest.title; $('subtitle').value = suggest.subtitle;
+    $('ylo').value = suggest.ylim[0]; $('yhi').value = suggest.ylim[1];
+    $('xstart').value = suggest.data_start; $('xend').value = '';
+    ['frameCard','annCard','saveCard'].forEach(id => $(id).style.display = 'block');
+    status(''); queueRender();
+  } catch (e) { status('⚠ ' + e.message); }
+};
+
+function annRow(a = {}) {
+  const div = document.createElement('div');
+  div.className = 'ann';
+  div.innerHTML = `
+    <div class="row"><input class="a-ts" placeholder="2026-07-05 17:01 (UTC)" value="${esc(a.ts||'')}">
+    <input class="a-label" placeholder="label (\\n = line break)" value="${esc(a.label||'')}"></div>
+    <div class="row4">
+      <input class="a-sprite" placeholder="sprite name (optional)" value="${esc(a.sprite||'')}">
+      <input class="a-dx" type="number" placeholder="dx" value="${a.dx ?? 0}">
+      <input class="a-dy" type="number" placeholder="dy" value="${a.dy ?? 70}">
+      <select class="a-line"><option value="true">event line</option>
+        <option value="false" ${a.line === false ? 'selected' : ''}>no line</option></select>
+    </div>
+    <button type="button" class="ghost a-del">✕ remove</button>`;
+  div.querySelector('.a-del').onclick = () => { div.remove(); queueRender(); };
+  div.querySelectorAll('input,select').forEach(el => el.oninput = queueRender);
+  return div;
+}
+$('addAnn').onclick = () => { $('annList').appendChild(annRow()); };
+
+function buildStory() {
+  const checked = [...document.querySelectorAll('.mktbox:checked')].map(b => b.value);
+  const events = [...document.querySelectorAll('.ann')].map(d => {
+    const ev = { ts: d.querySelector('.a-ts').value.trim(),
+                 label: d.querySelector('.a-label').value.replaceAll('\\n', '\n') };
+    const spr = d.querySelector('.a-sprite').value.trim(); if (spr) ev.sprite = spr;
+    ev.dx = +d.querySelector('.a-dx').value || 0; ev.dy = +d.querySelector('.a-dy').value || 0;
+    if (d.querySelector('.a-line').value === 'false') ev.line = false;
+    return ev;
+  }).filter(ev => ev.ts && ev.label);
+  const chart = {
+    type: $('ctype').value, preset: $('preset').value,
+    title: $('title').value, subtitle: $('subtitle').value.replaceAll('\\n', '\n') || undefined,
+    events, output: 'charts/my-story/chart.png',
+  };
+  if ($('ylo').value !== '' && $('yhi').value !== '') chart.ylim = [+$('ylo').value, +$('yhi').value];
+  if ($('xstart').value.trim()) chart.start = $('xstart').value.trim();
+  if ($('xend').value.trim()) chart.end = $('xend').value.trim();
+  if ($('resample').value) chart.resample = $('resample').value;
+  if ($('showvol').checked) chart.show_volume = true;
+  if ($('showno').checked) chart.show_no = true;
+  if (checked.length > 1 || (checked.length === 1)) chart.markets = checked;
+  return { market: eventRef, data_start: suggest.data_start + ' UTC', charts: [chart] };
+}
+
+function status(msg) { $('status').textContent = msg; }
+
+function queueRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(render, 700);
+}
+
+async function render() {
+  const story = buildStory();
+  if (!story.market || !story.charts[0].markets?.length) return;
+  status('rendering…');
+  const ctl = new AbortController();
+  if (inflight) inflight.abort();
+  inflight = ctl;
+  try {
+    const r = await fetch('/api/render', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(story), signal: ctl.signal});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    $('previewImg').src = 'data:image/png;base64,' + j.pngs[0];
+    $('previewCard').style.display = 'block';
+    $('dlPng').href = 'data:image/png;base64,' + j.pngs[0];
+    $('dlJson').href = 'data:application/json;charset=utf-8,' +
+      encodeURIComponent(JSON.stringify(story, null, 2));
+    status('');
+  } catch (e) { if (e.name !== 'AbortError') status('⚠ ' + e.message); }
+}
+
+['ctype','preset','resample','title','subtitle','ylo','yhi','xstart','xend'].forEach(id => $(id).oninput = queueRender);
+['showvol','showno'].forEach(id => $(id).onchange = queueRender);
+
+$('makeSprite').onclick = async () => {
+  status('generating sprite…');
+  try {
+    const r = await fetch('/api/sprite', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name: $('sprName').value, subject: $('sprSubject').value})});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    $('sprResult').innerHTML = `<img class="spriteimg" src="data:image/png;base64,${j.png}"> saved as <b>${esc(j.name)}</b>`;
+    status('');
+  } catch (e) { status('⚠ ' + e.message); }
+};
+</script>
 </body>
 </html>
