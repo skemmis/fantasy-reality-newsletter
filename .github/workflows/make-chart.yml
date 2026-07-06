@@ -1,0 +1,43 @@
+name: Make charts
+
+# No-terminal chart generation: edit a story JSON in the GitHub web editor,
+# then Actions -> "Make charts" -> Run workflow. Fresh candles are fetched,
+# PNGs are rendered, and everything is committed back to the branch you ran
+# it from — download the chart from the repo's charts/ folder.
+
+on:
+  workflow_dispatch:
+    inputs:
+      story:
+        description: "Path to a story JSON"
+        required: true
+        default: "stories/balogun-red-card/story.json"
+      refresh:
+        description: "Refetch candle data (updates the snapshot)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  charts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install .
+      - name: Render charts
+        run: |
+          python scripts/make_chart.py "${{ inputs.story }}" ${{ inputs.refresh && '--refresh' || '' }}
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add charts/ stories/
+          git diff --cached --quiet && echo "nothing changed" && exit 0
+          git commit -m "Render charts for ${{ inputs.story }}"
+          git push

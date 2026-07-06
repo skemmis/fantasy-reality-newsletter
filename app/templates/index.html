@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fantasy Reality — Chart Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #17122b; --canvas: #e9e5dd; --card: #f9f7f0; --magenta: #c8327a;
+    --teal: #128a72; --muted: #544a6b; --gold: #ffc37a;
+  }
+  * { box-sizing: border-box; border-radius: 0 !important; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: var(--canvas); color: var(--ink);
+    font-family: 'Space Mono', monospace;
+    background-image:
+      radial-gradient(42rem 42rem at 10% 16%, rgba(200,50,122,0.10), transparent 60%),
+      radial-gradient(46rem 46rem at 90% 80%, rgba(18,138,114,0.10), transparent 62%);
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-family: 'Press Start 2P', cursive; font-size: 1.05rem; letter-spacing: -1px;
+       text-transform: uppercase; line-height: 1.8; }
+  h1 .fr { color: var(--magenta); }
+  .card { background: var(--card); border: 2px solid var(--ink);
+          box-shadow: 6px 6px 0 rgba(0,0,0,0.15); padding: 1.5rem; margin-bottom: 2rem; }
+  label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--muted);
+          margin: 1rem 0 0.25rem; }
+  input, select, textarea {
+    width: 100%; padding: 0.5rem 0.6rem; font-family: 'Space Mono', monospace; font-size: 0.9rem;
+    background: #fff; border: 2px solid var(--ink); color: var(--ink);
+  }
+  textarea { min-height: 7rem; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1rem; }
+  button {
+    margin-top: 1.5rem; font-family: 'Press Start 2P', cursive; font-size: 0.8rem;
+    text-transform: uppercase; padding: 0.9rem 1.4rem; cursor: pointer;
+    background: var(--magenta); color: #fff3d6; border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+  .error { background: #ffd6e9; border: 2px solid var(--ink); padding: 0.75rem 1rem;
+           margin-bottom: 1rem; font-size: 0.85rem; }
+  .result img { width: 100%; border: 2px solid var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,0.15); }
+  .hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+  a.dl { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--magenta); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="fr">Fantasy Reality</span> · Chart Generator</h1>
+
+  {% if error %}<div class="error">⚠ {{ error }}</div>{% endif %}
+
+  {% if png %}
+  <div class="card result">
+    <img src="data:image/png;base64,{{ png }}" alt="Generated chart">
+    <a class="dl" download="fantasy-reality-chart.png" href="data:image/png;base64,{{ png }}">↓ download PNG</a>
+  </div>
+  {% endif %}
+
+  <form class="card" method="post" action="/chart">
+    <label>Kalshi market (URL or ticker)</label>
+    <input name="market" required placeholder="https://kalshi.com/markets/…" value="{{ form.market or '' }}">
+
+    <div class="row3">
+      <div>
+        <label>Chart type</label>
+        <select name="chart_type">
+          <option value="timeline" {% if form.chart_type == 'timeline' %}selected{% endif %}>timeline (days)</option>
+          <option value="closeup" {% if form.chart_type == 'closeup' %}selected{% endif %}>close-up (minutes + volume)</option>
+        </select>
+      </div>
+      <div>
+        <label>Preset</label>
+        <select name="preset">
+          <option value="editorial" {% if form.preset == 'editorial' %}selected{% endif %}>editorial</option>
+          <option value="meme" {% if form.preset == 'meme' %}selected{% endif %}>meme</option>
+        </select>
+      </div>
+      <div>
+        <label>Y-limits (optional, e.g. 45 60)</label>
+        <input name="ylim" value="{{ form.ylim or '' }}">
+      </div>
+    </div>
+
+    <label>Title</label>
+    <input name="title" placeholder="defaults to the market title" value="{{ form.title or '' }}">
+    <label>Subtitle (\n for line break)</label>
+    <input name="subtitle" value="{{ form.subtitle or '' }}">
+
+    <div class="row3">
+      <div>
+        <label>Fetch data since (UTC)</label>
+        <input name="data_start" placeholder="2026-07-02 03:00" value="{{ form.data_start or '' }}">
+        <div class="hint">default: last 7 days</div>
+      </div>
+      <div>
+        <label>Window start (UTC, optional)</label>
+        <input name="start" value="{{ form.start or '' }}">
+      </div>
+      <div>
+        <label>Window end (UTC, optional)</label>
+        <input name="end" value="{{ form.end or '' }}">
+      </div>
+    </div>
+
+    <label>Events — one per line: time | label | sprite | dx | dy | line</label>
+    <textarea name="events" placeholder="2026-07-05 17:01 UTC | FIFA suspends\nthe suspension | red_card | -40 | 95">{{ form.events or '' }}</textarea>
+    <div class="hint">sprite: red_card (or blank) · dx/dy nudge the label in points · line=false hides the vertical marker</div>
+
+    <button type="submit">▸ Generate chart</button>
+  </form>
+</div>
+</body>
+</html>
