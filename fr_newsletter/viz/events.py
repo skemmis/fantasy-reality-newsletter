@@ -1,10 +1,10 @@
 """Timestamped chart annotations."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
-import pandas as pd
+from ..times import parse_ts
 
 
 @dataclass
@@ -27,7 +27,5 @@ class Event:
     @classmethod
     def from_dict(cls, d: dict) -> "Event":
         d = dict(d)
-        d["ts"] = pd.Timestamp(d["ts"]).to_pydatetime()
-        if d["ts"].tzinfo is None:
-            d["ts"] = d["ts"].replace(tzinfo=__import__("datetime").timezone.utc)
+        d["ts"] = parse_ts(d["ts"]).to_pydatetime()
         return cls(**d)

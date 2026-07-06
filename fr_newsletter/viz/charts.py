@@ -20,8 +20,7 @@ import pandas as pd
 
 from . import theme
 from .events import Event
-
-ET = ZoneInfo("America/New_York")
+from ..times import ET, parse_ts
 
 
 def _as_series(data) -> dict[str, pd.DataFrame]:
@@ -31,11 +30,8 @@ def _as_series(data) -> dict[str, pd.DataFrame]:
 
 
 def _ts(val, tz: ZoneInfo) -> pd.Timestamp:
-    """Parse a timestamp; naive values are treated as UTC."""
-    ts = pd.Timestamp(val)
-    if ts.tzinfo is None:
-        ts = ts.tz_localize("UTC")
-    return ts.tz_convert(tz)
+    """Parse a timestamp (naive = ET) and convert to the display zone."""
+    return parse_ts(val).tz_convert(tz)
 
 
 def _prep(df: pd.DataFrame, tz: ZoneInfo, start=None, end=None,

@@ -82,15 +82,23 @@ def api_resolve(payload: dict = Body(...)):
         df = client.get_candles(primary, data_start, now)
         ylim = _auto_ylim({"": _prep(df, ET)}) if not df.empty else (0, 100)
 
+        def et_local(dt) -> str:  # value for a datetime-local input, in ET
+            return pd.Timestamp(dt).tz_convert(ET).strftime("%Y-%m-%dT%H:%M")
+
         return {
             "event_ticker": primary.event_ticker,
             "primary": primary.market_ticker,
             "markets": markets,
             "suggest": {
-                "data_start": data_start.strftime("%Y-%m-%d %H:%M"),
+                "data_start": et_local(data_start),
                 "title": primary.title,
                 "subtitle": "",
                 "ylim": list(ylim),
+            },
+            "ranges": {
+                "since_open": et_local(data_start),
+                "last_24h": et_local(now - timedelta(hours=24)),
+                "last_6h": et_local(now - timedelta(hours=6)),
             },
         }
     except Exception as exc:

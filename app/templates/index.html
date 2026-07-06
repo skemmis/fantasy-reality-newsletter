@@ -128,13 +128,18 @@
       </div>
       <div class="row">
         <div>
-          <label>X from (UTC)</label>
-          <input id="xstart" placeholder="2026-07-02 03:00">
+          <label>X from (ET)</label>
+          <input id="xstart" type="datetime-local">
         </div>
         <div>
-          <label>X to (UTC, blank = latest)</label>
-          <input id="xend" placeholder="">
+          <label>X to (ET, blank = latest)</label>
+          <input id="xend" type="datetime-local">
         </div>
+      </div>
+      <div style="margin-top:0.5rem">
+        <button type="button" class="ghost qr" data-r="since_open">since open</button>
+        <button type="button" class="ghost qr" data-r="last_24h">last 24h</button>
+        <button type="button" class="ghost qr" data-r="last_6h">last 6h</button>
       </div>
       <div class="row" style="margin-top:0.8rem">
         <label style="margin:0"><input type="checkbox" id="showvol"> overlay volume panel</label>
@@ -185,7 +190,10 @@
 
 <script>
 const $ = id => document.getElementById(id);
-let markets = [], eventRef = "", suggest = {}, renderTimer = null, inflight = null;
+let markets = [], eventRef = "", suggest = {}, ranges = {}, renderTimer = null, inflight = null;
+
+// datetime-local value ("2026-07-05T13:01") -> story timestamp in ET
+function etTs(v) { return v.trim() ? v.trim().replace('T', ' ') + ' ET' : ''; }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
@@ -196,7 +204,7 @@ $('load').onclick = async () => {
       body: JSON.stringify({ref: $('ref').value})});
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
-    eventRef = $('ref').value; markets = j.markets; suggest = j.suggest;
+    eventRef = $('ref').value; markets = j.markets; suggest = j.suggest; ranges = j.ranges || {};
     $('marketList').innerHTML = markets.map((m, i) => `
       <div class="mkt">
         <input type="checkbox" class="mktbox" value="${esc(m.ticker)}" ${m.ticker === j.primary ? 'checked' : ''}>
@@ -217,8 +225,10 @@ function annRow(a = {}) {
   const div = document.createElement('div');
   div.className = 'ann';
   div.innerHTML = `
-    <div class="row"><input class="a-ts" placeholder="2026-07-05 17:01 (UTC)" value="${esc(a.ts||'')}">
-    <input class="a-label" placeholder="label (\\n = line break)" value="${esc(a.label||'')}"></div>
+    <div class="row"><div><label style="margin-top:0">When (ET)</label>
+    <input class="a-ts" type="datetime-local" value="${esc(a.ts||'')}"></div>
+    <div><label style="margin-top:0">Label</label>
+    <input class="a-label" placeholder="label (\\n = line break)" value="${esc(a.label||'')}"></div></div>
     <div class="row4">
       <input class="a-sprite" placeholder="sprite name (optional)" value="${esc(a.sprite||'')}">
       <input class="a-dx" type="number" placeholder="dx" value="${a.dx ?? 0}">
@@ -236,7 +246,7 @@ $('addAnn').onclick = () => { $('annList').appendChild(annRow()); };
 function buildStory() {
   const checked = [...document.querySelectorAll('.mktbox:checked')].map(b => b.value);
   const events = [...document.querySelectorAll('.ann')].map(d => {
-    const ev = { ts: d.querySelector('.a-ts').value.trim(),
+    const ev = { ts: etTs(d.querySelector('.a-ts').value),
                  label: d.querySelector('.a-label').value.replaceAll('\\n', '\n') };
     const spr = d.querySelector('.a-sprite').value.trim(); if (spr) ev.sprite = spr;
     ev.dx = +d.querySelector('.a-dx').value || 0; ev.dy = +d.querySelector('.a-dy').value || 0;
@@ -249,14 +259,14 @@ function buildStory() {
     events, output: 'charts/my-story/chart.png',
   };
   if ($('ylo').value !== '' && $('yhi').value !== '') chart.ylim = [+$('ylo').value, +$('yhi').value];
-  if ($('xstart').value.trim()) chart.start = $('xstart').value.trim();
-  if ($('xend').value.trim()) chart.end = $('xend').value.trim();
+  if (etTs($('xstart').value)) chart.start = etTs($('xstart').value);
+  if (etTs($('xend').value)) chart.end = etTs($('xend').value);
   if ($('resample').value) chart.resample = $('resample').value;
   if ($('psource').value !== 'mid') chart.price_source = $('psource').value;
   if ($('showvol').checked) chart.show_volume = true;
   if ($('showno').checked) chart.show_no = true;
   if (checked.length > 1 || (checked.length === 1)) chart.markets = checked;
-  return { market: eventRef, data_start: suggest.data_start + ' UTC', charts: [chart] };
+  return { market: eventRef, data_start: etTs(suggest.data_start), charts: [chart] };
 }
 
 function status(msg) { $('status').textContent = msg; }
@@ -288,7 +298,10 @@ async function render() {
 }
 
 ['ctype','preset','resample','psource','title','subtitle','ylo','yhi','xstart','xend'].forEach(id => $(id).oninput = queueRender);
-['showvol','showno'].forEach(id => $(id).onchange = queueRender);
+['showvol','showno','xstart','xend'].forEach(id => $(id).onchange = queueRender);
+document.querySelectorAll('.qr').forEach(b => b.onclick = () => {
+  if (ranges[b.dataset.r]) { $('xstart').value = ranges[b.dataset.r]; $('xend').value = ''; queueRender(); }
+});
 
 $('makeSprite').onclick = async () => {
   status('generating sprite…');

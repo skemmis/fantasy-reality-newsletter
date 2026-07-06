@@ -61,8 +61,13 @@ the charts that tell it. See `stories/balogun-red-card/story.json`:
 - `sprites` (optional) — `{ "name": "subject description" }`; missing sprites
   are generated with Nano Banana (see below) before rendering
 
+**Times are Eastern.** Anywhere a human writes a timestamp (wizard fields,
+story JSON, annotation times), a bare time like `2026-07-05 13:01` means ET.
+Append `UTC` (or use ISO `…Z`) for UTC; `ET`/`EST`/`EDT` are also accepted
+explicitly. Charts always display in ET.
+
 Chart-level knobs: `ylim` (tighten the y-axis around the action; omit for a
-best-guess), `start`/`end` (window the x-axis; naive timestamps are UTC),
+best-guess), `start`/`end` (window the x-axis; naive timestamps are ET),
 `title`, `subtitle`, `preset`, `resample`, `markets` (list of the event's
 market tickers to overlay as series), `show_volume` (volume subpanel on a
 timeline), `show_no` (plot YES and NO of a single market), `price_source`

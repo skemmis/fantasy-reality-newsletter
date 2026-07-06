@@ -19,6 +19,7 @@ from pathlib import Path
 import pandas as pd
 
 from .data import kalshi
+from .times import parse_ts
 from .viz import Event, market_closeup, price_timeline
 from .viz.sprites import generate_sprite
 
@@ -32,9 +33,9 @@ def _fetch(client: kalshi.KalshiClient, ref: kalshi.MarketRef, story: dict,
     if snap and snap.exists() and not refresh:
         _, df, fetched_at = kalshi.load_snapshot(snap)
         return df, fetched_at
-    start = pd.Timestamp(story["data_start"]).to_pydatetime()
+    start = parse_ts(story["data_start"]).to_pydatetime()
     end_cfg = story.get("data_end")
-    end = pd.Timestamp(end_cfg).to_pydatetime() if end_cfg else datetime.now(timezone.utc)
+    end = parse_ts(end_cfg).to_pydatetime() if end_cfg else datetime.now(timezone.utc)
     df = client.get_candles(ref, start, end, interval)
     if snap:
         kalshi.save_snapshot(snap, ref, df)
