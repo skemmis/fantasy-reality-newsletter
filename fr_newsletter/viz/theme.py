@@ -129,15 +129,16 @@ def footer(fig, source: str, *, x: float = 0.06) -> None:
              color=MUTED_TEXT, ha="right", va="bottom")
 
 
-def cents_axis(ax, lo: float = 0, hi: float = 100, step: float = 25) -> None:
-    """Probability-price y axis: clean ¢ ticks, emphasized 50¢ toss-up line."""
+def chance_axis(ax, lo: float = 0, hi: float = 100, step: float = 25) -> None:
+    """Probability y axis (% chance; Kalshi cents map 1:1), with an
+    emphasized 50% toss-up line."""
     import math
 
     import numpy as np
     ax.set_ylim(lo, hi)
     ticks = np.arange(math.ceil(lo / step) * step, hi + 0.1, step)
     ax.set_yticks(ticks)
-    ax.set_yticklabels([f"{int(t)}¢" for t in ticks])
+    ax.set_yticklabels([f"{int(t)}%" for t in ticks])
     if lo < 50 < hi:
         ax.axhline(50, color=MUTED_TEXT, linewidth=1.0, alpha=0.55, zorder=1.2)
 

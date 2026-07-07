@@ -25,7 +25,7 @@
   h2 { font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-transform: uppercase;
        margin: 0 0 0.5rem; }
   h2 .step { color: var(--magenta); }
-  .cols { display: grid; grid-template-columns: 460px 1fr; gap: 1.25rem; align-items: start; }
+  .cols { display: grid; grid-template-columns: 552px 1fr; gap: 1.25rem; align-items: start; }
   @media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
   .card { background: var(--card); border: 2px solid var(--ink);
           box-shadow: 6px 6px 0 rgba(0,0,0,0.15); padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; }
@@ -118,11 +118,11 @@
       <input id="subtitle" placeholder="context line under the title">
       <div class="row">
         <div>
-          <label>Y-axis min (¢)</label>
+          <label>Y-axis min (%)</label>
           <input id="ylo" type="number" min="0" max="100">
         </div>
         <div>
-          <label>Y-axis max (¢)</label>
+          <label>Y-axis max (%)</label>
           <input id="yhi" type="number" min="0" max="100">
         </div>
       </div>
@@ -208,7 +208,7 @@ $('load').onclick = async () => {
     $('marketList').innerHTML = markets.map((m, i) => `
       <div class="mkt">
         <input type="checkbox" class="mktbox" value="${esc(m.ticker)}" ${m.ticker === j.primary ? 'checked' : ''}>
-        <span>${esc(m.label)}${m.last_price != null ? ' · ' + Math.round(m.last_price) + '¢' : ''}</span>
+        <span>${esc(m.label)}${m.last_price != null ? ' · ' + Math.round(m.last_price) + '%' : ''}</span>
         <span class="vol">${Math.round(m.volume).toLocaleString()} vol</span>
       </div>`).join('');
     $('marketHint').style.display = 'block';

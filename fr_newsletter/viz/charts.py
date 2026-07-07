@@ -63,10 +63,10 @@ def _auto_ylim(series: dict[str, pd.DataFrame]) -> tuple[float, float]:
     return float(lo), float(hi)
 
 
-def _nice_cents_axis(ax, ylim: tuple[float, float]) -> None:
+def _nice_chance_axis(ax, ylim: tuple[float, float]) -> None:
     span = ylim[1] - ylim[0]
     step = next(s for s in (1, 2, 5, 10, 25) if span / s <= 7)
-    theme.cents_axis(ax, *ylim, step=step)
+    theme.chance_axis(ax, *ylim, step=step)
 
 
 def _day_axis(ax, tz: ZoneInfo) -> None:
@@ -114,7 +114,7 @@ def _end_markers(ax, series: dict[str, pd.DataFrame], ylim) -> None:
         while any(abs(label_y - p) < min_gap for p in placed):
             label_y -= min_gap
         placed.append(label_y)
-        theme.end_marker(ax, x, y, f"{y:.0f}¢", color=color, label_y=label_y)
+        theme.end_marker(ax, x, y, f"{y:.0f}%", color=color, label_y=label_y)
 
 
 def _legend(ax) -> None:
@@ -213,7 +213,7 @@ def price_timeline(
 
     if ylim is None:
         ylim = _auto_ylim(series)
-    _nice_cents_axis(ax, ylim)
+    _nice_chance_axis(ax, ylim)
 
     lo_x = min(df.index[0] for df in series.values())
     hi_x = max(df.index[-1] for df in series.values())
@@ -279,7 +279,7 @@ def market_closeup(
 
     if ylim is None:
         ylim = _auto_ylim(series)
-    _nice_cents_axis(ax, ylim)
+    _nice_chance_axis(ax, ylim)
     plt.setp(ax.get_xticklabels(), visible=False)
     ax.tick_params(axis="x", length=0)
 
