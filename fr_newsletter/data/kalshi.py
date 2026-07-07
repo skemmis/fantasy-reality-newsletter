@@ -239,11 +239,20 @@ def _candles_to_df(rows: list[dict]) -> pd.DataFrame:
     # Between trades the API reports no close; carry the last state forward.
     for col in ("close", "bid", "ask"):
         df[col] = df[col].ffill()
-    # Midpoint kills bid-ask bounce without lagging real moves; where the book
-    # is one-sided fall back to the last trade.
-    df["mid"] = (df["bid"] + df["ask"]) / 2
-    df["mid"] = df["mid"].fillna(df["close"])
+    df["mid"] = _mid(df)
     return df.dropna(subset=["close"])
+
+
+def _mid(df: pd.DataFrame) -> pd.Series:
+    """Bid/ask midpoint — kills bid-ask bounce without lagging real moves.
+
+    Falls back to the last trade where the book is one-sided or absurdly wide
+    (an empty post-settlement book reports bid 0 / ask 100, whose "midpoint"
+    of 50 is meaningless).
+    """
+    mid = (df["bid"] + df["ask"]) / 2
+    wide = (df["ask"] - df["bid"]) > 20
+    return mid.mask(wide, df["close"]).fillna(df["close"])
 
 
 # ---------------------------------------------------------------- snapshots
@@ -277,7 +286,7 @@ def load_snapshot(path: Path) -> tuple[MarketRef, pd.DataFrame, str]:
     df["ts"] = pd.to_datetime(df["ts"])
     df = df.set_index("ts").sort_index()
     if "bid" in df and "ask" in df:  # older snapshots predate bid/ask
-        df["mid"] = ((df["bid"] + df["ask"]) / 2).fillna(df["close"])
+        df["mid"] = _mid(df)
     else:
         df["mid"] = df["close"]
     return ref, df, payload["fetched_at"]

@@ -25,6 +25,12 @@
   h2 { font-family: 'Press Start 2P', cursive; font-size: 0.7rem; text-transform: uppercase;
        margin: 0 0 0.5rem; }
   h2 .step { color: var(--magenta); }
+  details.card > summary { cursor: pointer; list-style: none; user-select: none; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary h2 { display: inline; margin: 0; }
+  details.card > summary::before { content: '▸ '; color: var(--magenta); font-size: 0.7rem; }
+  details.card[open] > summary::before { content: '▾ '; }
+  details.card[open] > summary { display: block; margin-bottom: 0.6rem; }
   .cols { display: grid; grid-template-columns: 552px 1fr; gap: 1.25rem; align-items: start; }
   @media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
   .card { background: var(--card); border: 2px solid var(--ink);
@@ -71,17 +77,17 @@
   <div class="cols">
   <div id="controls">
 
-    <div class="card">
-      <h2><span class="step">Step 1</span> · Market</h2>
+    <details class="card" id="marketCard" open>
+      <summary><h2><span class="step">Step 1</span> · Market<span id="mktSummary" style="color:var(--teal)"></span></h2></summary>
       <label>Kalshi event or market URL (or ticker)</label>
       <input id="ref" placeholder="https://kalshi.com/markets/…">
       <button id="load" type="button">▸ Load market</button>
       <div id="marketList"></div>
       <div class="hint" id="marketHint" style="display:none">Check several markets to overlay them as series. The first checked market anchors annotations.</div>
-    </div>
+    </details>
 
-    <div class="card" id="frameCard" style="display:none">
-      <h2><span class="step">Step 2</span> · Frame</h2>
+    <details class="card" id="frameCard" style="display:none">
+      <summary><h2><span class="step">Step 2</span> · Frame</h2></summary>
       <div class="row3">
         <div>
           <label>Chart type</label>
@@ -145,10 +151,10 @@
         <label style="margin:0"><input type="checkbox" id="showvol"> overlay volume panel</label>
         <label style="margin:0"><input type="checkbox" id="showno"> show YES and NO</label>
       </div>
-    </div>
+    </details>
 
-    <div class="card" id="annCard" style="display:none">
-      <h2><span class="step">Step 3</span> · Annotations</h2>
+    <details class="card" id="annCard" style="display:none">
+      <summary><h2><span class="step">Step 3</span> · Annotations</h2></summary>
       <div id="annList"></div>
       <button type="button" class="ghost" id="addAnn">+ add annotation</button>
       <hr style="border:1px solid var(--canvas); margin:1rem 0">
@@ -159,14 +165,14 @@
       </div>
       <button type="button" class="alt" id="makeSprite">▸ Generate sprite</button>
       <span id="sprResult"></span>
-    </div>
+    </details>
 
-    <div class="card" id="saveCard" style="display:none">
-      <h2>Save</h2>
+    <details class="card" id="saveCard" style="display:none" open>
+      <summary><h2>Save</h2></summary>
       <a class="dl" id="dlPng" download="fantasy-reality-chart.png">↓ chart PNG</a>
       <a class="dl" id="dlJson" download="story.json">↓ story JSON</a>
       <div class="hint">Commit the story JSON to <code>stories/&lt;slug&gt;/story.json</code> (GitHub web editor) to make it re-runnable by the Action.</div>
-    </div>
+    </details>
 
     <details class="legacy card">
       <summary>Story mode — paste a full story JSON</summary>
@@ -217,6 +223,10 @@ $('load').onclick = async () => {
     $('ylo').value = suggest.ylim[0]; $('yhi').value = suggest.ylim[1];
     $('xstart').value = suggest.data_start; $('xend').value = '';
     ['frameCard','annCard','saveCard'].forEach(id => $(id).style.display = 'block');
+    $('marketCard').open = false;   // step 1 done — collapse it, keep it reopenable
+    $('mktSummary').textContent = ' — ' + j.event_ticker + ' ✓';
+    $('frameCard').open = true;
+    $('annCard').open = true;
     status(''); queueRender();
   } catch (e) { status('⚠ ' + e.message); }
 };
