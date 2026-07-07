@@ -96,19 +96,12 @@
 
     <details class="card" id="frameCard" style="display:none">
       <summary><h2><span class="step">Step 2</span> · Frame</h2></summary>
-      <div class="row3">
+      <div class="row">
         <div>
           <label>Chart type</label>
           <select id="ctype">
             <option value="timeline">timeline (days)</option>
             <option value="closeup">close-up (minutes + volume)</option>
-          </select>
-        </div>
-        <div>
-          <label>Preset</label>
-          <select id="preset">
-            <option value="editorial">editorial</option>
-            <option value="meme">meme</option>
           </select>
         </div>
         <div>
@@ -209,8 +202,8 @@ let markets = [], eventRef = "", suggest = {}, ranges = {}, renderTimer = null, 
 // Time-window state: applied* (ET strings) feed the render; pending* (epoch
 // seconds) are the not-yet-confirmed brush lines. meta carries the last
 // render's plot geometry so mouse-x maps to a timestamp.
-let meta = null, brushMode = null, pendingStart = null, pendingEnd = null,
-    appliedStart = null, appliedEnd = null;
+let meta = null, brushMode = null, brushAnnRow = null,
+    pendingStart = null, pendingEnd = null, appliedStart = null, appliedEnd = null;
 
 // datetime-local value ("2026-07-05T13:01") -> story timestamp in ET
 function etTs(v) { return v.trim() ? v.trim().replace('T', ' ') + ' ET' : ''; }
@@ -259,19 +252,29 @@ function annRow(a = {}) {
   const div = document.createElement('div');
   div.className = 'ann';
   div.innerHTML = `
-    <div class="row"><div><label style="margin-top:0">When (ET)</label>
-    <input class="a-ts" type="datetime-local" value="${esc(a.ts||'')}"></div>
-    <div><label style="margin-top:0">Label</label>
-    <input class="a-label" placeholder="label (\\n = line break)" value="${esc(a.label||'')}"></div></div>
-    <div class="row4">
-      <input class="a-sprite" placeholder="sprite name (optional)" value="${esc(a.sprite||'')}">
-      <input class="a-dx" type="number" placeholder="dx" value="${a.dx ?? 0}">
-      <input class="a-dy" type="number" placeholder="dy" value="${a.dy ?? 70}">
-      <select class="a-line"><option value="true">event line</option>
-        <option value="false" ${a.line === false ? 'selected' : ''}>no line</option></select>
+    <label style="margin-top:0">When — click “set time”, then click on the chart</label>
+    <div style="display:flex; gap:0.6rem; align-items:center">
+      <button type="button" class="ghost a-settime" style="margin:0">◉ set time</button>
+      <span class="a-read" style="font-size:0.75rem; color:var(--muted)">(not set)</span>
     </div>
+    <label>Label (\\n = line break)</label>
+    <input class="a-label" placeholder="e.g. FIFA suspends the ban" value="${esc(a.label||'')}">
+    <div class="row4">
+      <div><label style="margin-top:0.4rem">Sprite</label><input class="a-sprite" placeholder="optional" value="${esc(a.sprite||'')}"></div>
+      <div><label style="margin-top:0.4rem">dx →</label><input class="a-dx" type="number" value="${a.dx ?? 0}"></div>
+      <div><label style="margin-top:0.4rem">dy ↑</label><input class="a-dy" type="number" value="${a.dy ?? 70}"></div>
+      <div><label style="margin-top:0.4rem">Line</label><select class="a-line">
+        <option value="true">show</option>
+        <option value="false" ${a.line === false ? 'selected' : ''}>hide</option></select></div>
+    </div>
+    <div class="hint">dx / dy nudge the label box left↔right and down↕up (in points) so it clears the line and other labels; the leader line still points at the event.</div>
     <button type="button" class="ghost a-del">✕ remove</button>`;
   div.querySelector('.a-del').onclick = () => { div.remove(); queueRender(); };
+  div.querySelector('.a-settime').onclick = () => {
+    if (!meta) { status('load a market first'); return; }
+    brushMode = 'ann'; brushAnnRow = div; wrap.classList.add('brushing');
+    status('click on the chart to set this annotation’s time');
+  };
   div.querySelectorAll('input,select').forEach(el => el.oninput = queueRender);
   return div;
 }
@@ -280,7 +283,7 @@ $('addAnn').onclick = () => { $('annList').appendChild(annRow()); };
 function buildStory() {
   const checked = [...document.querySelectorAll('.mktbox:checked')].map(b => b.value);
   const events = [...document.querySelectorAll('.ann')].map(d => {
-    const ev = { ts: etTs(d.querySelector('.a-ts').value),
+    const ev = { ts: d.dataset.ts ? epochToEt(+d.dataset.ts) : '',
                  label: d.querySelector('.a-label').value.replaceAll('\\n', '\n') };
     const spr = d.querySelector('.a-sprite').value.trim(); if (spr) ev.sprite = spr;
     ev.dx = +d.querySelector('.a-dx').value || 0; ev.dy = +d.querySelector('.a-dy').value || 0;
@@ -288,7 +291,7 @@ function buildStory() {
     return ev;
   }).filter(ev => ev.ts && ev.label);
   const chart = {
-    type: $('ctype').value, preset: $('preset').value,
+    type: $('ctype').value, preset: 'editorial',
     title: $('title').value, subtitle: $('subtitle').value.replaceAll('\\n', '\n') || undefined,
     events, output: 'charts/my-story/chart.png',
   };
@@ -330,7 +333,7 @@ async function render() {
   } catch (e) { if (e.name !== 'AbortError') status('⚠ ' + e.message); }
 }
 
-['ctype','preset','resample','title','subtitle','ylo','yhi'].forEach(id => $(id).oninput = queueRender);
+['ctype','resample','title','subtitle','ylo','yhi'].forEach(id => $(id).oninput = queueRender);
 $('showvol').onchange = queueRender;
 document.querySelectorAll('.qr').forEach(b => b.onclick = () => {
   appliedStart = b.dataset.r === 'since_open' ? null : (ranges[b.dataset.r] || null);
@@ -375,15 +378,25 @@ const wrap = $('imgWrap');
 wrap.addEventListener('mousemove', e => {
   if (!brushMode || !meta) return;
   const ts = pxToTs(e.clientX - $('previewImg').getBoundingClientRect().left);
-  drawLine($('cursorLine'), ts); updateReadout(ts);
+  drawLine($('cursorLine'), ts);
+  if (brushMode === 'ann') status('click to set annotation time → ' + epochToEt(ts));
+  else updateReadout(ts);
 });
 wrap.addEventListener('mouseleave', () => { $('cursorLine').style.display = 'none'; });
 wrap.addEventListener('click', e => {
   if (!brushMode || !meta) return;
   const ts = pxToTs(e.clientX - $('previewImg').getBoundingClientRect().left);
-  if (brushMode === 'start') pendingStart = ts; else pendingEnd = ts;
-  brushMode = null; wrap.classList.remove('brushing');
-  $('cursorLine').style.display = 'none'; redrawLines(); updateReadout();
+  const mode = brushMode;
+  if (mode === 'start') pendingStart = ts;
+  else if (mode === 'end') pendingEnd = ts;
+  else if (mode === 'ann' && brushAnnRow) {
+    brushAnnRow.dataset.ts = String(Math.round(ts));
+    brushAnnRow.querySelector('.a-read').innerHTML = '<b>' + epochToEt(ts) + '</b>';
+    brushAnnRow = null;
+  }
+  brushMode = null; wrap.classList.remove('brushing'); $('cursorLine').style.display = 'none';
+  redrawLines();
+  if (mode === 'ann') { status(''); queueRender(); } else updateReadout();
 });
 $('setStart').onclick = () => { if (!meta) return; brushMode = 'start'; wrap.classList.add('brushing'); updateReadout(); };
 $('setEnd').onclick = () => { if (!meta) return; brushMode = 'end'; wrap.classList.add('brushing'); updateReadout(); };

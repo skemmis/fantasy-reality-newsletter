@@ -22,8 +22,14 @@ A three-step wizard with a live preview:
    type numbers to override. Set the time window by clicking **set start** /
    **set end** and dropping a line on the chart, then **confirm range** — or
    use the reset / last-24h / last-6h buttons.
-3. **Annotations** — add timestamped callouts, with optional sprites
+3. **Annotations** — add callouts; set each one's time by clicking **set
+   time** and then clicking the chart. `dx`/`dy` nudge the label box (in
+   points) off the event so it doesn't cover the line; add optional sprites
    (generate new ones inline via Nano Banana).
+
+The wizard renders the `editorial` preset. The louder `meme` preset (pixel
+callout boxes + shadows) is still available by setting `"preset": "meme"` in
+a story JSON.
 
 The preview is the real PNG, re-rendered after every change. Save downloads
 the chart and the story JSON that reproduces it — commit that JSON to
