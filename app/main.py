@@ -46,6 +46,23 @@ def _fig_b64(fig) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 
+def _fig_meta(fig) -> dict:
+    """Geometry the browser needs to map a mouse-x over the PNG to a timestamp:
+    the price axes' pixel box (as figure fractions) and its time span."""
+    import matplotlib.dates as mdates
+
+    ax = fig.axes[0]  # price panel (volume panel, if any, shares this x-scale)
+    bb = ax.get_position()
+    x0, x1 = ax.get_xlim()
+    w, h = (fig.get_size_inches() * fig.dpi)
+    return {
+        "fig_w": float(w), "fig_h": float(h),
+        "plot": {"left": bb.x0, "right": bb.x1, "top": bb.y1, "bottom": bb.y0},
+        "x_min": mdates.num2date(x0).timestamp(),
+        "x_max": mdates.num2date(x1).timestamp(),
+    }
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse(
@@ -109,10 +126,14 @@ def api_resolve(payload: dict = Body(...)):
 def api_render(story: dict = Body(...)):
     """Render a (mini) story dict — same shape as stories/*.json — to PNG(s)."""
     try:
-        pngs = [_fig_b64(fig) for _, fig in render_story(story)]
+        pngs, meta = [], None
+        for i, (_chart, fig) in enumerate(render_story(story)):
+            if i == 0:
+                meta = _fig_meta(fig)  # before _fig_b64 closes the figure
+            pngs.append(_fig_b64(fig))
         if not pngs:
             raise ValueError("Story has no charts.")
-        return {"pngs": pngs}
+        return {"pngs": pngs, "meta": meta}
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
 

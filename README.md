@@ -17,8 +17,11 @@ A three-step wizard with a live preview:
    markets); the markets are listed with volumes, and the tool best-guesses
    the axes, window, and title. Check several markets to overlay them as
    series.
-2. **Frame** — adjust y-axis, x-window, titles, preset, smoothing; toggle a
-   volume panel or a YES + NO view.
+2. **Frame** — titles, preset, smoothing, optional volume panel. The y-axis
+   auto-frames the line to 80% of the chart height (leave the fields blank);
+   type numbers to override. Set the time window by clicking **set start** /
+   **set end** and dropping a line on the chart, then **confirm range** — or
+   use the reset / last-24h / last-6h buttons.
 3. **Annotations** — add timestamped callouts, with optional sprites
    (generate new ones inline via Nano Banana).
 

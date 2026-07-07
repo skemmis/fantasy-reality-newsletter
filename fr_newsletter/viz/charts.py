@@ -51,16 +51,26 @@ def _prep(df: pd.DataFrame, tz: ZoneInfo, start=None, end=None,
     return out
 
 
+_MIN_YSPAN = 6.0  # floor so a near-flat line doesn't zoom to absurd magnification
+
+
 def _auto_ylim(series: dict[str, pd.DataFrame]) -> tuple[float, float]:
-    """Best-guess y-axis: data range padded, snapped to 5s, clamped to 0-100."""
+    """Best-guess y-axis: frame the data as 80% of the chart height.
+
+    A 10% buffer sits above and below the data span (10 + 80 + 10 = 100), so
+    the line breathes without floating. The buffer is clamped where it would
+    run past 0% or 100% — a market that touches 100 keeps a hard ceiling
+    rather than inventing headroom that can't exist.
+    """
     lo = min(df["close"].min() for df in series.values())
     hi = max(df["close"].max() for df in series.values())
-    lo = max(0.0, 5 * ((lo - 2) // 5))
-    hi = min(100.0, 5 * -((-(hi + 2)) // 5))
-    if hi - lo < 10:  # never so tight that noise looks like drama
-        pad = (10 - (hi - lo)) / 2
-        lo, hi = max(0.0, lo - pad), min(100.0, hi + pad)
-    return float(lo), float(hi)
+    span = hi - lo
+    pad = 0.125 * span  # data at 80% -> total height 1.25*span -> 12.5% each side
+    lo, hi = lo - pad, hi + pad
+    if hi - lo < _MIN_YSPAN:  # near-flat data: fall back to a readable minimum
+        mid = (lo + hi) / 2
+        lo, hi = mid - _MIN_YSPAN / 2, mid + _MIN_YSPAN / 2
+    return max(0.0, lo), min(100.0, hi)
 
 
 def _nice_chance_axis(ax, ylim: tuple[float, float]) -> None:
