@@ -13,12 +13,23 @@ import {EpisodeData, Market} from '../types';
 import {COLORS, tokens, hardShadow, inkAlpha, pixelBorder} from '../theme/theme';
 import {PIXEL_FAMILY, MONO_FAMILY} from '../fonts';
 import {OddsCounter} from './OddsCounter';
-import {AnnotationCallout} from './AnnotationCallout';
+import {AnnotationCallout, calloutBox} from './AnnotationCallout';
+import {buildBeatReveal, BeatRevealPlan} from '../reveal';
 
 export type RevealSpec =
   | number // static fraction of the full series, 0-1
   | string // static ISO timestamp
-  | {startFrame: number; endFrame: number; from?: number; to?: number};
+  | {startFrame: number; endFrame: number; from?: number; to?: number}
+  | {
+      // Beat-paced: draw fast to each annotation, hold while the callout
+      // is read, continue. See src/reveal.ts.
+      beats: true;
+      startFrame: number;
+      drawFrames: number;
+      holdFrames?: number;
+      from?: number;
+      to?: number;
+    };
 
 export interface ChartWindow {
   start: string;
@@ -38,14 +49,20 @@ export interface MarketChartSceneProps {
   reveal?: RevealSpec;
   showCursor?: boolean;
   showCounter?: boolean;
+  showAnnotations?: boolean;
   curve?: 'step' | 'linear';
   zoom?: ZoomSpec;
 }
 
+const DAY = 24 * 60 * 60 * 1000;
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-const fmtDate = (ms: number) => {
+const fmtDayLabel = (ms: number) => {
   const d = new Date(ms);
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+};
+const fmtFullDate = (ms: number) => {
+  const d = new Date(ms);
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()} ${d.getUTCFullYear()}`;
 };
 const fmtVol = (v: number) =>
   v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `$${Math.round(v / 1e3)}K` : `$${v}`;
@@ -66,6 +83,65 @@ const valueAt = (market: Market, tms: number, times: number[]): number => {
   return pts[lo].p + f * (pts[hi].p - pts[lo].p);
 };
 
+/**
+ * X ticks: quarterly (JAN/APR/JUL/OCT, labeled with year) for long spans,
+ * monthly for mid spans, ~biweekly day labels for zoomed windows.
+ */
+const xTicksFor = (d0: number, d1: number): Array<{t: number; label: string}> => {
+  const spanDays = (d1 - d0) / DAY;
+  const out: Array<{t: number; label: string}> = [];
+  if (spanDays <= 100) {
+    const step = spanDays <= 40 ? 7 : 14;
+    let t = Math.ceil(d0 / DAY) * DAY;
+    for (; t <= d1; t += step * DAY) {
+      out.push({t, label: fmtDayLabel(t)});
+    }
+    return out;
+  }
+  const stepMonths = spanDays > 330 ? 3 : 1;
+  const d = new Date(d0);
+  d.setUTCDate(1);
+  d.setUTCHours(0, 0, 0, 0);
+  while (d.getUTCMonth() % stepMonths !== 0 || d.getTime() < d0) {
+    d.setUTCMonth(d.getUTCMonth() + 1);
+  }
+  while (d.getTime() <= d1) {
+    const m = d.getUTCMonth();
+    out.push({
+      t: d.getTime(),
+      label:
+        stepMonths === 3 || m === 0
+          ? `${MONTHS[m]} ${d.getUTCFullYear()}`
+          : MONTHS[m],
+    });
+    d.setUTCMonth(m + stepMonths);
+  }
+  return out;
+};
+
+interface PlacedCallout {
+  key: number;
+  ax: number;
+  ay: number;
+  bx: number;
+  by: number;
+  w: number;
+  h: number;
+  label: string;
+  frac: number;
+  accent: string;
+}
+
+const intersects = (
+  a: {bx: number; by: number; w: number; h: number},
+  b: {bx: number; by: number; w: number; h: number},
+  margin = 12,
+) =>
+  a.bx - margin < b.bx + b.w &&
+  a.bx + a.w + margin > b.bx &&
+  a.by - margin < b.by + b.h &&
+  a.by + a.h + margin > b.by;
+
 export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
   data,
   marketTicker,
@@ -73,6 +149,7 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
   reveal = 1,
   showCursor = true,
   showCounter = true,
+  showAnnotations = true,
   curve = 'step',
   zoom,
 }) => {
@@ -86,16 +163,36 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
   const tMin = times[0];
   const tMax = times[times.length - 1];
 
+  const annList = useMemo(
+    () => data.annotations.filter((a) => !a.market || a.market === market.ticker),
+    [data.annotations, market.ticker],
+  );
+
   // ---- reveal fraction of the FULL series -------------------------------
+  const beatPlan: BeatRevealPlan | null = useMemo(() => {
+    if (typeof reveal === 'object' && 'beats' in reveal) {
+      const fracs = annList.map((a) => (Date.parse(a.t) - tMin) / (tMax - tMin));
+      return buildBeatReveal(fracs, reveal);
+    }
+    return null;
+  }, [reveal, annList, tMin, tMax]);
+
   let revealFrac: number;
   let revealFrameFor: (frac: number) => number; // frame at which reveal passes frac
-  if (typeof reveal === 'number') {
+  if (beatPlan) {
+    revealFrac = beatPlan.fracAt(frame);
+    revealFrameFor = beatPlan.frameFor;
+  } else if (typeof reveal === 'number') {
     revealFrac = reveal;
     revealFrameFor = (frac) => (frac <= reveal ? 0 : Infinity);
   } else if (typeof reveal === 'string') {
     const f = (Date.parse(reveal) - tMin) / (tMax - tMin);
     revealFrac = f;
     revealFrameFor = (frac) => (frac <= f ? 0 : Infinity);
+  } else if ('beats' in reveal) {
+    // Unreachable: the beats variant is handled by beatPlan above.
+    revealFrac = 0;
+    revealFrameFor = () => Infinity;
   } else {
     const {startFrame, endFrame, from = 0, to = 1} = reveal;
     revealFrac = interpolate(frame, [startFrame, endFrame], [from, to], {
@@ -111,6 +208,10 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
   }
   revealFrac = Math.max(0, Math.min(1, revealFrac));
   const revealT = tMin + revealFrac * (tMax - tMin);
+
+  // Which annotation hold (if any) is running, and its 0->1->0 ramp.
+  const holdIndex = beatPlan ? beatPlan.holdAt(frame) : null;
+  const holdRamp = beatPlan ? beatPlan.holdRamp(frame) : 0;
 
   // ---- x/y domains (with animated zoom) ---------------------------------
   const baseDomain: [number, number] = chartWindow
@@ -191,7 +292,7 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
   // Partial path (prefix of fullPath) to derive an exact evolution fraction.
   const revealedIdx = allIdx.filter((i) => times[i] <= revealT);
   let evolution = 0;
-  if (revealedIdx.length > 0 && fullPath) {
+  if (revealedIdx.length > 0 && fullPath && revealFrac > 0) {
     const prefix = mkLine(revealedIdx) ?? '';
     const prefixWithTip =
       revealT > times[revealedIdx[revealedIdx.length - 1]]
@@ -207,18 +308,103 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
       : {x: x(tMin), y: y(market.points[0].p)};
 
   // ---- ticks -------------------------------------------------------------
-  const yTicks = y.ticks(portrait ? 4 : 5);
-  const xTicks = x.ticks(portrait ? 4 : 6).map((d) => d.getTime());
+  const yStep = yDomain[1] - yDomain[0] > 45 ? 20 : 10;
+  const yTicks: number[] = [];
+  for (let v = Math.ceil(yDomain[0] / yStep) * yStep; v <= yDomain[1]; v += yStep) {
+    yTicks.push(v);
+  }
+  const xTicks = xTicksFor(xDomain[0], xDomain[1]).filter(
+    ({t}) => x(t) >= 24 && x(t) <= plotW - 24,
+  );
+  const has50 = yDomain[0] < 50 && yDomain[1] > 50;
+
+  // ---- annotation callout layout (clamp + collision nudging) -------------
+  // Boxes must stay inside the plot, never sit on the series line (which
+  // also keeps them off the riding tip cursor), and never overlap each
+  // other. Placement is derived from the domain only, so boxes are stable
+  // while the line draws on.
+  const placed: PlacedCallout[] = [];
+  const lineYAtPx = (px: number) =>
+    y(valueAt(market, (x.invert(px) as Date).getTime(), times));
+  const overlapsLine = (r: {bx: number; by: number; w: number; h: number}) => {
+    const x0 = Math.max(0, r.bx - 8);
+    const x1 = Math.min(plotW, r.bx + r.w + 8);
+    for (let sx = x0; sx <= x1; sx += 18) {
+      const ly = lineYAtPx(sx);
+      if (ly > r.by - 14 && ly < r.by + r.h + 14) return true;
+    }
+    return false;
+  };
+  if (showAnnotations) {
+    annList.forEach((a, i) => {
+      const at = Date.parse(a.t);
+      const ax = x(at);
+      if (ax < 8 || ax > plotW - 8) return;
+      const ay = y(valueAt(market, at, times));
+      const {w, h} = calloutBox(a.label);
+      const dx = a.dx ?? 0;
+      const dy = a.dy ?? -40;
+      // dy < 0: box floats above the anchor; dy >= 0: below.
+      const clampX = (v: number) => Math.max(10, Math.min(plotW - w - 10, v));
+      const clampY = (v: number) => Math.max(10, Math.min(plotH - h - 10, v));
+      const bx0 = clampX(ax + dx - w / 2);
+      const by0 = clampY(dy < 0 ? ay + dy - h - 20 : ay + dy + 20);
+      const clearAt = (bx: number, by: number) => {
+        const r = {bx, by, w, h};
+        return !overlapsLine(r) && !placed.some((o) => intersects(r, o));
+      };
+      let bx = bx0;
+      let by = by0;
+      let found = false;
+      // Sweep vertically (up first), then widen horizontally.
+      for (let hx = 0; hx <= 6 && !found; hx++) {
+        for (const candX of hx === 0 ? [bx0] : [bx0 - hx * 60, bx0 + hx * 60]) {
+          const cx2 = clampX(candX);
+          for (let step = 0; step <= 14 && !found; step++) {
+            for (const candY of step === 0 ? [by0] : [by0 - step * 26, by0 + step * 26]) {
+              if (candY < 10 || candY > plotH - h - 10) continue;
+              if (clearAt(cx2, candY)) {
+                bx = cx2;
+                by = candY;
+                found = true;
+                break;
+              }
+            }
+          }
+          if (found) break;
+        }
+      }
+      placed.push({
+        key: i,
+        ax,
+        ay,
+        bx,
+        by,
+        w,
+        h,
+        label: a.label,
+        frac: (at - tMin) / (tMax - tMin),
+        accent: i % 2 === 0 ? COLORS.magenta : COLORS.red,
+      });
+    });
+  }
+  const activeCallout =
+    holdIndex !== null && beatPlan
+      ? placed.find((p) => Math.abs(p.frac - beatPlan.stops[holdIndex].frac) < 1e-6) ?? null
+      : null;
 
   // ---- counter / delta ---------------------------------------------------
   const firstValue = market.points[0].p;
   const delta = tipValue - firstValue;
   const deltaUp = delta >= 0;
 
-  const cursorBlink = Math.floor(frame / 8) % 2 === 0;
+  // Cursor blink slows + dims while a hold is running.
+  const blinkPeriod = holdIndex !== null ? 24 : 8;
+  const cursorBlink = Math.floor(frame / blinkPeriod) % 2 === 0;
   const seriesColor = tokens.series[market.slot % tokens.series.length];
 
   const counterSize = portrait ? 96 : 116;
+  const atToday = revealFrac >= 0.995;
 
   // Prefer the episode question over a terse slot name; size to fit.
   const headline = (
@@ -233,6 +419,8 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
     : headline.length > 44
       ? 27
       : 34;
+
+  const dimOpacity = 0.15 * holdRamp;
 
   return (
     <AbsoluteFill style={{background: COLORS.canvas, padding: pad}}>
@@ -294,11 +482,27 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
               display: 'flex',
               flexDirection: 'column',
               alignItems: portrait ? 'flex-start' : 'flex-end',
-              gap: 14,
+              gap: 12,
             }}
           >
             <OddsCounter value={tipValue} size={counterSize} color={COLORS.ink} />
             <div style={{display: 'flex', gap: 12, alignItems: 'center'}}>
+              {/* Date readout: which point of history the odometer shows. */}
+              <span
+                style={{
+                  fontFamily: MONO_FAMILY,
+                  fontWeight: 700,
+                  fontSize: 22,
+                  letterSpacing: '0.1em',
+                  color: atToday ? COLORS.ink : COLORS.mutedText,
+                  background: atToday ? COLORS.gold : COLORS.cream,
+                  border: pixelBorder(3),
+                  boxShadow: hardShadow(inkAlpha(0.2), 0.5),
+                  padding: '4px 12px',
+                }}
+              >
+                {atToday ? 'TODAY' : fmtFullDate(revealT)}
+              </span>
               <span
                 style={{
                   fontFamily: MONO_FAMILY,
@@ -371,13 +575,13 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
                   fontFamily={MONO_FAMILY}
                   fontWeight={700}
                   fontSize={22}
-                  fill={COLORS.mutedText}
+                  fill={t === 50 ? COLORS.ink : COLORS.mutedText}
                 >
                   {t}%
                 </text>
               </g>
             ))}
-            {xTicks.map((t) => (
+            {xTicks.map(({t, label}) => (
               <g key={`x${t}`}>
                 <line
                   x1={x(t)}
@@ -390,31 +594,89 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
                 />
                 <text
                   x={x(t)}
-                  y={plotH + 38}
+                  y={plotH + 40}
                   textAnchor="middle"
                   fontFamily={MONO_FAMILY}
                   fontWeight={700}
-                  fontSize={21}
+                  fontSize={22}
                   fill={COLORS.mutedText}
-                  letterSpacing="0.06em"
+                  letterSpacing="0.05em"
                 >
-                  {fmtDate(t)}
+                  {label}
                 </text>
               </g>
             ))}
-            {/* 50% reference */}
-            {yDomain[0] < 50 && yDomain[1] > 50 ? (
-              <line
-                x1={0}
-                x2={plotW}
-                y1={y(50)}
-                y2={y(50)}
-                stroke={inkAlpha(0.25)}
-                strokeWidth={2}
-                strokeDasharray="10 8"
-                shapeRendering="crispEdges"
-              />
-            ) : null}
+            {/* 50% reference: the coin-flip line */}
+            {has50
+              ? (() => {
+                  const tagW = 238;
+                  // Dodge callout boxes: try right-above, right-below,
+                  // left-above, left-below; take the first clear slot.
+                  const midX = Math.round((plotW - tagW) / 2);
+                  const slots = [
+                    {x: plotW - 14 - tagW, yOff: -36},
+                    {x: plotW - 14 - tagW, yOff: 8},
+                    {x: midX, yOff: -36},
+                    {x: midX, yOff: 8},
+                    {x: 14, yOff: -36},
+                    {x: 14, yOff: 8},
+                  ];
+                  const slot =
+                    slots.find((s) => {
+                      const r = {bx: s.x, by: y(50) + s.yOff, w: tagW, h: 30};
+                      return (
+                        !placed.some((p) => intersects(r, p, 6)) && !overlapsLine(r)
+                      );
+                    }) ??
+                    slots.find(
+                      (s) =>
+                        !placed.some((p) =>
+                          intersects({bx: s.x, by: y(50) + s.yOff, w: tagW, h: 30}, p, 6),
+                        ),
+                    ) ??
+                    slots[0];
+                  const tagX = slot.x;
+                  const tagYOff = slot.yOff;
+                  return (
+                    <g>
+                      <line
+                        x1={0}
+                        x2={plotW}
+                        y1={y(50)}
+                        y2={y(50)}
+                        stroke={inkAlpha(0.4)}
+                        strokeWidth={3}
+                        strokeDasharray="12 9"
+                        shapeRendering="crispEdges"
+                      />
+                      <g transform={`translate(${tagX}, ${y(50) + tagYOff + 36})`}>
+                        <rect
+                          x={0}
+                          y={-36}
+                          width={tagW}
+                          height={30}
+                          fill={COLORS.card}
+                          stroke={inkAlpha(0.4)}
+                          strokeWidth={2}
+                          shapeRendering="crispEdges"
+                        />
+                        <text
+                          x={tagW / 2}
+                          y={-14}
+                          textAnchor="middle"
+                          fontFamily={MONO_FAMILY}
+                          fontWeight={700}
+                          fontSize={17}
+                          letterSpacing="0.06em"
+                          fill={COLORS.mutedText}
+                        >
+                          50% — COIN FLIP
+                        </text>
+                      </g>
+                    </g>
+                  );
+                })()
+              : null}
             {/* plot frame */}
             <rect
               x={0}
@@ -450,31 +712,27 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
                 strokeDasharray={evolved.strokeDasharray}
                 strokeDashoffset={evolved.strokeDashoffset}
               />
-              {/* annotations */}
-              {data.annotations
-                .filter((a) => !a.market || a.market === market.ticker)
-                .map((a, i) => {
-                  const at = Date.parse(a.t);
-                  const ax = x(at);
-                  if (ax < 8 || ax > plotW - 8) return null;
-                  const frac = (at - tMin) / (tMax - tMin);
-                  return (
-                    <AnnotationCallout
-                      key={i}
-                      x={ax}
-                      y={y(valueAt(market, at, times))}
-                      dx={a.dx}
-                      dy={a.dy}
-                      label={a.label}
-                      frame={frame}
-                      appearFrame={revealFrameFor(frac)}
-                      accent={i % 2 === 0 ? COLORS.magenta : COLORS.red}
-                    />
-                  );
-                })}
+              {/* non-active annotations (dimmed under the wash during holds) */}
+              {placed
+                .filter((p) => p !== activeCallout)
+                .map((p) => (
+                  <AnnotationCallout
+                    key={p.key}
+                    x={p.ax}
+                    y={p.ay}
+                    boxX={p.bx}
+                    boxY={p.by}
+                    boxW={p.w}
+                    boxH={p.h}
+                    label={p.label}
+                    frame={frame}
+                    appearFrame={revealFrameFor(p.frac)}
+                    accent={p.accent}
+                  />
+                ))}
               {/* now-cursor: pixel square riding the tip */}
-              {showCursor ? (
-                <g transform={`translate(${tip.x}, ${tip.y})`}>
+              {showCursor && revealFrac > 0 ? (
+                <g transform={`translate(${tip.x}, ${tip.y})`} opacity={1 - 0.3 * holdRamp}>
                   <rect
                     x={-13}
                     y={-13}
@@ -494,6 +752,32 @@ export const MarketChartScene: React.FC<MarketChartSceneProps> = ({
                     shapeRendering="crispEdges"
                   />
                 </g>
+              ) : null}
+              {/* dim wash while a callout hold runs; active callout above it */}
+              {dimOpacity > 0.004 ? (
+                <rect
+                  x={-6}
+                  y={-6}
+                  width={plotW + 12}
+                  height={plotH + 12}
+                  fill={COLORS.card}
+                  opacity={dimOpacity}
+                />
+              ) : null}
+              {activeCallout ? (
+                <AnnotationCallout
+                  x={activeCallout.ax}
+                  y={activeCallout.ay}
+                  boxX={activeCallout.bx}
+                  boxY={activeCallout.by}
+                  boxW={activeCallout.w}
+                  boxH={activeCallout.h}
+                  label={activeCallout.label}
+                  frame={frame}
+                  appearFrame={revealFrameFor(activeCallout.frac)}
+                  accent={activeCallout.accent}
+                  active
+                />
               ) : null}
             </g>
           </g>

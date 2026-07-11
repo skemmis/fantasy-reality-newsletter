@@ -14,7 +14,12 @@ export const OddsCounter: React.FC<{
   color?: string;
   label?: string;
 }> = ({value, size = 120, color = COLORS.ink, label}) => {
-  const v = Math.max(0, Math.min(100, value));
+  const raw = Math.max(0, Math.min(100, value));
+  // Snap wheels: show a crisp integer for most of each unit and roll
+  // quickly through the last quarter, so fractional values (holds,
+  // static reveals) never freeze the odometer between digits.
+  const fracPart = raw % 1;
+  const v = Math.floor(raw) + (fracPart < 0.75 ? 0 : (fracPart - 0.75) / 0.25);
 
   const digitH = size * 1.15;
   const digitW = size * 1.05;

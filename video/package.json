@@ -7,17 +7,20 @@
     "studio": "remotion studio",
     "render": "remotion render",
     "still": "remotion still",
+    "gen:sfx": "node scripts/gen_sfx.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@remotion/cli": "4.0.362",
     "@remotion/fonts": "^4.0.362",
     "@remotion/google-fonts": "4.0.362",
+    "@remotion/media": "^4.0.362",
     "@remotion/media-utils": "4.0.362",
     "@remotion/paths": "4.0.362",
     "@remotion/transitions": "4.0.362",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
+    "jsfxr": "^1.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "4.0.362"

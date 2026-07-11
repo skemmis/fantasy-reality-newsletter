@@ -1,119 +1,451 @@
-import React from 'react';
-import {AbsoluteFill, Sequence} from 'remotion';
-import {EpisodeData, WordsTimeline} from '../types';
+import React, {useMemo} from 'react';
+import {
+  AbsoluteFill,
+  Sequence,
+  interpolate,
+  spring,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+  Easing,
+} from 'remotion';
+import {Audio} from '@remotion/media';
+import {EpisodeData, Market} from '../types';
 import {sampleEpisode} from '../sample-data';
-import {COLORS} from '../theme/theme';
-import {IntroCam} from '../components/IntroCam';
+import {COLORS, tokens, hardShadow, inkAlpha, pixelBorder} from '../theme/theme';
+import {PIXEL_FAMILY, MONO_FAMILY} from '../fonts';
 import {KineticTitle} from '../components/KineticTitle';
 import {MarketChartScene} from '../components/MarketChartScene';
 import {MemeCutaway} from '../components/MemeCutaway';
 import {EndCard} from '../components/EndCard';
-import {CaptionLayer} from '../components/CaptionLayer';
+import {OddsCounter} from '../components/OddsCounter';
+import {annotationFracs, buildBeatReveal} from '../reveal';
 
-const DAY = 24 * 60 * 60 * 1000;
+const FPS = 30;
 
 /**
- * Pilot episode skeleton. Segment lengths are placeholders — once the VO is
- * recorded, replace SEGMENTS with times derived from words.json and feed the
- * real WordsTimeline into CaptionLayer.
+ * BEATS mirrors public/episodes/fedhike/episode.yaml (scene order + `est`
+ * second estimates). NOTE: these timings are pre-VO estimates — once
+ * vo/words.json exists, derive each beat's start from the start of its
+ * first narration line and feed the real WordsTimeline into CaptionLayer.
+ *
+ * `cut` marks a hard scene cut (2-frame white flash + thud). The four
+ * chart move-beats run as ONE continuous MarketChartScene so the line
+ * draws through them without resets; their ids are kept for bookkeeping.
  */
-export const SEGMENTS = {
-  introCam: 120, // 4s
-  title: 75, // 2.5s
-  tape: 420, // 14s
-  meme: 75, // 2.5s
-  endCard: 150, // 5s
-} as const;
+export const BEATS = [
+  {id: 'cold-open', est: 10, cut: false},
+  {id: 'title', est: 3, cut: true},
+  {id: 'setup', est: 28, cut: true},
+  {id: 'the-tape', est: 14, cut: true},
+  {id: 'move-tariffs', est: 12, cut: false},
+  {id: 'move-jobs', est: 10, cut: false},
+  {id: 'move-fomc', est: 12, cut: false},
+  {id: 'meme-react', est: 3, cut: true},
+  {id: 'zoom', est: 12, cut: true},
+  {id: 'so-what', est: 20, cut: true},
+  {id: 'endcard', est: 12, cut: true},
+] as const;
 
-export const FEDHIKE_DURATION = Object.values(SEGMENTS).reduce((a, b) => a + b, 0);
+type BeatId = (typeof BEATS)[number]['id'];
 
-/** Placeholder VO timeline (seconds are local to the Tape segment). */
-const placeholderWords = (): WordsTimeline => {
-  const text =
-    'the market says four percent the fed hikes this year and that number is doing something weird';
-  const words = text.split(' ');
-  const per = 0.34;
-  return {
-    audio: 'episodes/fedhike/vo.mp3',
-    duration: words.length * per,
-    words: words.map((w, i) => ({
-      w,
-      start: i * per,
-      end: (i + 1) * per - 0.04,
-      line: Math.floor(i / 6),
-    })),
-    lines: [
-      {i: 0, text, start: 0, end: words.length * per, beat: 'hook'},
-    ],
-  };
+const beatStart = (id: BeatId): number => {
+  let at = 0;
+  for (const b of BEATS) {
+    if (b.id === id) return at;
+    at += b.est * FPS;
+  }
+  return at;
+};
+const beatFrames = (id: BeatId): number =>
+  (BEATS.find((b) => b.id === id)?.est ?? 0) * FPS;
+
+export const FEDHIKE_DURATION = BEATS.reduce((a, b) => a + b.est * FPS, 0);
+
+// The tape block: the-tape + the three move beats, one continuous scene.
+const TAPE_START = beatStart('the-tape');
+const TAPE_FRAMES =
+  beatFrames('the-tape') +
+  beatFrames('move-tariffs') +
+  beatFrames('move-jobs') +
+  beatFrames('move-fomc');
+
+const sfx = (name: string) => staticFile(`assets/sfx/${name}.wav`);
+
+/** Linear-interpolated series value at time t (ms). */
+const valueAt = (market: Market, tms: number, times: number[]): number => {
+  const pts = market.points;
+  if (tms <= times[0]) return pts[0].p;
+  if (tms >= times[times.length - 1]) return pts[pts.length - 1].p;
+  let lo = 0;
+  let hi = times.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (times[mid] <= tms) lo = mid;
+    else hi = mid;
+  }
+  const f = (tms - times[lo]) / (times[hi] - times[lo]);
+  return pts[lo].p + f * (pts[hi].p - pts[lo].p);
+};
+
+/** 2-frame hard white flash + thud at a cut point. */
+const CutFlash: React.FC<{at: number}> = ({at}) => (
+  <>
+    <Sequence from={at} durationInFrames={2} name="Cut flash">
+      <AbsoluteFill style={{background: '#ffffff'}} />
+    </Sequence>
+    <Sequence from={at} durationInFrames={14} name="Cut thud" layout="none">
+      <Audio src={sfx('thud')} volume={0.45} />
+    </Sequence>
+  </>
+);
+
+/** Setup-beat stat card ("HIKE by Dec 31 2026 — 51%"). */
+const StatCard: React.FC<{
+  label: string;
+  value: string;
+  accent: string;
+  appearFrame: number;
+}> = ({label, value, accent, appearFrame}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  if (frame < appearFrame) return null;
+  const s = spring({
+    frame: frame - appearFrame,
+    fps,
+    config: {damping: 12, stiffness: 240, mass: 0.7},
+    durationInFrames: 12,
+  });
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'stretch',
+        background: COLORS.cream,
+        border: pixelBorder(4),
+        boxShadow: hardShadow(inkAlpha(0.25), 1.4),
+        scale: String(0.7 + 0.3 * s),
+        opacity: s,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: PIXEL_FAMILY,
+          fontSize: 44,
+          color: COLORS.card,
+          background: accent,
+          padding: '20px 22px',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        {value}
+      </span>
+      <span
+        style={{
+          fontFamily: MONO_FAMILY,
+          fontWeight: 700,
+          fontSize: 30,
+          color: COLORS.ink,
+          padding: '20px 26px',
+          display: 'flex',
+          alignItems: 'center',
+          letterSpacing: '0.02em',
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+};
+
+/** Cold open: dimmed chart card, line hidden, huge odometer with the last price. */
+const ColdOpen: React.FC<{data: EpisodeData; lastPrice: number}> = ({data, lastPrice}) => {
+  const frame = useCurrentFrame();
+  const rolled = interpolate(frame, [8, 64], [Math.max(0, lastPrice - 28), lastPrice], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+  return (
+    <AbsoluteFill>
+      <MarketChartScene
+        data={data}
+        reveal={0}
+        showCursor={false}
+        showCounter={false}
+        showAnnotations={false}
+        curve="step"
+      />
+      {/* dim the card; the counter is the only thing alive */}
+      <AbsoluteFill style={{background: 'rgba(233, 229, 221, 0.62)'}} />
+      <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', gap: 44}}>
+        <div
+          style={{
+            fontFamily: MONO_FAMILY,
+            fontWeight: 700,
+            fontSize: 30,
+            letterSpacing: '0.32em',
+            color: COLORS.mutedText,
+          }}
+        >
+          RIGHT NOW ON KALSHI
+        </div>
+        <OddsCounter value={rolled} size={230} color={COLORS.ink} />
+        <div
+          style={{
+            fontFamily: PIXEL_FAMILY,
+            fontSize: 30,
+            lineHeight: 1.7,
+            color: COLORS.ink,
+            background: COLORS.gold,
+            border: pixelBorder(4),
+            boxShadow: hardShadow(inkAlpha(0.25), 1.2),
+            padding: '18px 30px',
+            maxWidth: '72%',
+            textAlign: 'center',
+          }}
+        >
+          ODDS THE FED HIKES BY DEC 31, 2026
+        </div>
+      </AbsoluteFill>
+      {[20, 34, 48].map((f) => (
+        <Sequence key={f} from={f} durationInFrames={8} name={`Roll tick ${f}`} layout="none">
+          <Audio src={sfx('tick')} volume={0.3} />
+        </Sequence>
+      ))}
+    </AbsoluteFill>
+  );
+};
+
+/** So-what: full tape, frozen, with a slow ken-burns-ish drift. */
+const SoWhat: React.FC<{data: EpisodeData}> = ({data}) => {
+  const frame = useCurrentFrame();
+  const {durationInFrames} = useVideoConfig();
+  return (
+    <AbsoluteFill style={{overflow: 'hidden', background: COLORS.canvas}}>
+      <AbsoluteFill
+        style={{
+          scale: String(interpolate(frame, [0, durationInFrames], [1.02, 1.09])),
+          translate: `${interpolate(frame, [0, durationInFrames], [10, -26])}px ${interpolate(frame, [0, durationInFrames], [6, -14])}px`,
+        }}
+      >
+        <MarketChartScene
+          data={data}
+          reveal={1}
+          showCursor
+          showCounter
+          showAnnotations
+          curve="step"
+        />
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
 };
 
 export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => {
   const episode = data ?? sampleEpisode();
   const market = episode.markets[0];
   const last = market.points[market.points.length - 1];
-  const end = Date.parse(last.t);
+  const times = useMemo(() => market.points.map((pt) => Date.parse(pt.t)), [market]);
+  const tMin = times[0];
+  const tMax = times[times.length - 1];
 
-  const s = SEGMENTS;
-  let at = 0;
-  const starts = {
-    introCam: (at = 0),
-    title: (at += s.introCam),
-    tape: (at += s.title),
-    meme: (at += s.tape),
-    endCard: (at += s.meme),
+  // ---- the tape block's beat-paced reveal plan (also drives SFX cues) ----
+  const fomcEnd = (Date.parse('2026-06-20T00:00:00Z') - tMin) / (tMax - tMin);
+  const revealTo = Math.min(1, Math.max(0.3, fomcEnd));
+  const tapeSpec = {
+    beats: true as const,
+    startFrame: 10,
+    // ~4 annotation holds of 3s each; the rest is drawing time.
+    drawFrames: TAPE_FRAMES - 10 - 4 * 90 - 60,
+    holdFrames: 90,
+    to: revealTo,
   };
+  const tapePlan = useMemo(
+    () =>
+      buildBeatReveal(
+        annotationFracs(
+          episode.annotations
+            .filter((a) => !a.market || a.market === market.ticker)
+            .map((a) => a.t),
+          tMin,
+          tMax,
+        ),
+        tapeSpec,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [episode, market.ticker, tMin, tMax],
+  );
+
+  // Counter milestone ticks: frames (tape-local) where the odometer
+  // crosses a multiple of 10.
+  const tickFrames = useMemo(() => {
+    const out: number[] = [];
+    const val = (f: number) => valueAt(market, tMin + tapePlan.fracAt(f) * (tMax - tMin), times);
+    let prev = Math.floor(val(0) / 10);
+    let lastTick = -20;
+    for (let f = 1; f <= TAPE_FRAMES; f++) {
+      const d = Math.floor(val(f) / 10);
+      if (d !== prev && f - lastTick >= 12) {
+        out.push(f);
+        lastTick = f;
+      }
+      prev = d;
+    }
+    return out.slice(0, 24);
+  }, [market, times, tMin, tMax, tapePlan]);
+
+  const zoomWindow = {start: '2026-05-15T00:00:00Z', end: '2026-07-11T23:00:00Z'};
 
   return (
     <AbsoluteFill style={{background: COLORS.canvas}}>
-      <Sequence durationInFrames={s.introCam} name="IntroCam">
-        <IntroCam name="SAM" tagline="definitely a financial professional" />
+      {/* ---- cold-open: dimmed card, huge counter, line hidden ---- */}
+      <Sequence durationInFrames={beatFrames('cold-open')} name="Cold open">
+        <ColdOpen data={episode} lastPrice={last.p} />
       </Sequence>
 
-      <Sequence from={starts.title} durationInFrames={s.title} name="Title">
+      {/* ---- title ---- */}
+      <Sequence from={beatStart('title')} durationInFrames={beatFrames('title')} name="Title">
         <KineticTitle
-          title={`THE FED WILL NOT HIKE. PROBABLY. ${Math.round(last.p)}%`}
-          accentWords={[6]}
-          kicker="THE MARKET SAYS · EP 001"
+          title="THE MARKET SAYS"
+          accentWords={[1]}
+          kicker="EP 01 · FED HIKE WATCH"
           stagger={5}
         />
+        {[0, 5, 10].map((f) => (
+          <Sequence key={f} from={f} durationInFrames={8} name={`Title blip ${f}`} layout="none">
+            <Audio src={sfx('blip')} volume={0.35} />
+          </Sequence>
+        ))}
       </Sequence>
 
-      <Sequence from={starts.tape} durationInFrames={s.tape} name="The Tape">
+      {/* ---- setup: chart at low reveal + the two stat cards ---- */}
+      <Sequence from={beatStart('setup')} durationInFrames={beatFrames('setup')} name="Setup">
         <MarketChartScene
           data={episode}
-          reveal={{startFrame: 10, endFrame: 330}}
-          zoom={{
-            window: {
-              start: new Date(end - 60 * DAY).toISOString(),
-              end: new Date(end + 2 * DAY).toISOString(),
-            },
-            atFrame: 345,
-            durationInFrames: 60,
-          }}
+          reveal={{startFrame: 6, endFrame: 76, from: 0, to: 0.15}}
+          showCursor
+          showCounter
+          showAnnotations={false}
           curve="step"
         />
-        {/* Captions ride on top of the chart; swap in the real words.json later. */}
-        <CaptionLayer timeline={placeholderWords()} />
+        <AbsoluteFill
+          style={{
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+            paddingLeft: '44%',
+            gap: 46,
+          }}
+        >
+          <StatCard
+            label="HIKE by Dec 31 2026"
+            value="51%"
+            accent={tokens.yes}
+            appearFrame={100}
+          />
+          <StatCard label="CUT by Dec 31 2026" value="25%" accent={tokens.no} appearFrame={160} />
+        </AbsoluteFill>
+        <Sequence from={4} durationInFrames={30} name="Setup whoosh" layout="none">
+          <Audio src={sfx('whoosh-down')} volume={0.3} />
+        </Sequence>
+        {[100, 160].map((f) => (
+          <Sequence key={f} from={f} durationInFrames={12} name={`Stat pop ${f}`} layout="none">
+            <Audio src={sfx('pop-in')} volume={0.4} />
+          </Sequence>
+        ))}
       </Sequence>
 
-      <Sequence from={starts.meme} durationInFrames={s.meme} name="MemeCutaway">
-        <MemeCutaway caption="the fed, allegedly" credit="meme library slot" />
+      {/* ---- the-tape -> move-tariffs -> move-jobs -> move-fomc ----
+           One continuous beat-paced draw: ease fast to each annotation,
+           hold 3s while its callout is active, continue. */}
+      <Sequence from={TAPE_START} durationInFrames={TAPE_FRAMES} name="The Tape (moves)">
+        <MarketChartScene
+          data={episode}
+          reveal={tapeSpec}
+          showCursor
+          showCounter
+          showAnnotations
+          curve="step"
+        />
+        {/* annotation pops: alarm for the tariff whipsaw, pop-in for the rest */}
+        {tapePlan.stops.map((s, i) => (
+          <Sequence
+            key={i}
+            from={Math.round(s.startFrame)}
+            durationInFrames={20}
+            name={`Annotation sfx ${i}`}
+            layout="none"
+          >
+            <Audio src={sfx(i === 0 ? 'alarm' : 'pop-in')} volume={i === 0 ? 0.35 : 0.45} />
+          </Sequence>
+        ))}
+        {/* odometer milestone ticks */}
+        {tickFrames.map((f) => (
+          <Sequence key={f} from={f} durationInFrames={6} name={`Tick ${f}`} layout="none">
+            <Audio src={sfx('tick')} volume={0.3} />
+          </Sequence>
+        ))}
       </Sequence>
 
-      <Sequence from={starts.endCard} durationInFrames={s.endCard} name="EndCard">
+      {/* ---- meme-react ---- */}
+      <Sequence
+        from={beatStart('meme-react')}
+        durationInFrames={beatFrames('meme-react')}
+        name="Meme react"
+      >
+        <MemeCutaway
+          src="assets/mascot/v2/panic.png"
+          kind="image"
+          caption="live look at bond traders"
+          credit="mascot cam"
+        />
+      </Sequence>
+
+      {/* ---- zoom: last two months ---- */}
+      <Sequence from={beatStart('zoom')} durationInFrames={beatFrames('zoom')} name="Zoom">
+        <MarketChartScene
+          data={episode}
+          reveal={1}
+          zoom={{window: zoomWindow, atFrame: 12, durationInFrames: 70}}
+          showCursor
+          showCounter
+          showAnnotations
+          curve="step"
+        />
+        <Sequence from={12} durationInFrames={30} name="Zoom whoosh" layout="none">
+          <Audio src={sfx('whoosh-up')} volume={0.45} />
+        </Sequence>
+      </Sequence>
+
+      {/* ---- so-what: full tape, slow drift ---- */}
+      <Sequence from={beatStart('so-what')} durationInFrames={beatFrames('so-what')} name="So what">
+        <SoWhat data={episode} />
+      </Sequence>
+
+      {/* ---- endcard: resolution watch ---- */}
+      <Sequence from={beatStart('endcard')} durationInFrames={beatFrames('endcard')} name="End card">
         <EndCard
           entries={[
             {
-              market: market.name.toUpperCase(),
+              market: 'FED HIKE BY DEC 31, 2026',
               call: `covered @ ${Math.round(last.p)}%`,
               status: 'OPEN',
             },
-            {market: 'OPENAI AGI BY 2027', call: 'on the docket', status: 'OPEN'},
-            {market: 'GOVT SHUTDOWN OCT', call: 'covered @ 62%', status: 'YES'},
           ]}
         />
+        <Sequence from={10} durationInFrames={30} name="Ka-ching" layout="none">
+          <Audio src={sfx('ka-ching')} volume={0.4} />
+        </Sequence>
       </Sequence>
+
+      {/* CAPTIONS PLACEHOLDER: no VO yet. Once vo/words.json exists, mount
+          <CaptionLayer timeline={words} /> across the narrated beats. */}
+
+      {/* hard cuts: 2-frame white flash + thud at each scene boundary */}
+      {BEATS.filter((b) => b.cut).map((b) => (
+        <CutFlash key={b.id} at={beatStart(b.id)} />
+      ))}
     </AbsoluteFill>
   );
 };
