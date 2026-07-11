@@ -1,16 +1,18 @@
 # The Market Says — Ep. 1: The coin-flip rate hike
 
+<!--
 Tone: deadpan financial-news anchor (Good Work energy). Jokes delivered flat.
 Target ~2:00–2:30 at a measured anchor read (~160 wpm). Lines are narration;
-`[beat:*]` markers tie lines to scenes in episode.yaml; HTML comments are
+[beat:*] markers tie lines to scenes in episode.yaml; HTML comments are
 stage directions / TODOs and are never read aloud.
 
-All odds below verified against the Kalshi API on 2026-07-11:
+All odds verified against the Kalshi API on 2026-07-11:
 FEDHIKE-26DEC31 last 51¢ ($1.27M vol), KXRATECUT-26DEC31 last 25¢,
 FEDHIKE-27DEC31 last 75¢. Move causes verified against dated news (see
 annotations.json). NOTE: re-export data.json and re-verify the headline
 number the day VO is recorded — narrated numbers must match the on-screen
 counter, which reads from the chart data.
+-->
 
 [beat:cold-open]
 

@@ -59,6 +59,7 @@ class Line:
 def parse_script(text: str) -> list[Line]:
     """Extract ordered narration lines, tagging each with the beat marker (if
     any) that immediately preceded it."""
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)  # stage directions
     lines: list[Line] = []
     pending_beat: str | None = None
     in_fence = False
