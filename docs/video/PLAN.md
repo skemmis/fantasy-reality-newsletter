@@ -317,7 +317,9 @@ team size), DaVinci Resolve, Pexels/Pixabay, jsfxr.
 
 ## 8. Open decisions
 
-1. **Show name / mascot concept** — needs taste, not research.
+1. **Show name / mascot concept** — DECIDED: the Anchor Goblin hosts
+   (v2 quality pack in `video/public/assets/mascot/v2/`); the Oracle is a
+   candidate recurring "forecast" bit character. Show name still open.
 2. **Voice identity** — pick a v3 library voice vs. commission a
    Professional clone; decides how "ownable" the narrator is.
 3. **Klipy commercial license** — email them before building the
