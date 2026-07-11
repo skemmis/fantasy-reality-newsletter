@@ -19,6 +19,10 @@ import {MarketChartScene} from '../components/MarketChartScene';
 import {MemeCutaway} from '../components/MemeCutaway';
 import {EndCard} from '../components/EndCard';
 import {OddsCounter} from '../components/OddsCounter';
+import {VersusCard} from '../components/VersusCard';
+import {PropPop} from '../components/PropPop';
+import {SpriteLoop} from '../components/SpriteLoop';
+import {AssetManifest, resolveAsset, resolveMeme} from '../assets';
 import {annotationFracs, buildBeatReveal} from '../reveal';
 
 const FPS = 30;
@@ -243,7 +247,11 @@ const SoWhat: React.FC<{data: EpisodeData}> = ({data}) => {
   );
 };
 
-export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => {
+export const FedHikeEpisode: React.FC<{
+  data: EpisodeData | null;
+  /** Art manifest (public/assets/assets.json); null before it's generated. */
+  assets?: AssetManifest | null;
+}> = ({data, assets = null}) => {
   const episode = data ?? sampleEpisode();
   const market = episode.markets[0];
   const last = market.points[market.points.length - 1];
@@ -297,6 +305,34 @@ export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => 
   }, [market, times, tMin, tMax, tapePlan]);
 
   const zoomWindow = {start: '2026-05-15T00:00:00Z', end: '2026-07-11T23:00:00Z'};
+
+  // ---- art assets (all resolve to null until assets.json is generated;
+  //      components then render their house placeholders) ----
+  const warsh = resolveAsset(assets, 'warsh', 'portrait') ?? resolveAsset(assets, 'warsh');
+  const powell = resolveAsset(assets, 'powell', 'portrait') ?? resolveAsset(assets, 'powell');
+  const thisIsFine = resolveMeme(assets, 'this is fine');
+  const rateDial = resolveAsset(assets, 'rate-dial', 'prop') ?? resolveAsset(assets, 'rate-dial');
+  const cpiFlame = resolveAsset(assets, 'cpi-flame', 'prop') ?? resolveAsset(assets, 'cpi-flame');
+  const goblinBug =
+    resolveAsset(assets, 'goblin-deadpan') ?? resolveAsset(assets, 'deadpan');
+
+  // move-fomc face-off: cut in after the last annotation lands, hold ~3s,
+  // hard-cut back to the chart. (Tape-local frames.)
+  const VS_FRAMES = 90;
+  const fomcStop = tapePlan.stops[tapePlan.stops.length - 1];
+  const vsFrom = Math.min(
+    fomcStop ? Math.round(fomcStop.startFrame) + 45 : TAPE_FRAMES - VS_FRAMES - 30,
+    TAPE_FRAMES - VS_FRAMES - 10,
+  );
+
+  // "Network bug" goblin watermark: visible through chart scenes only —
+  // skips title, the VS cutaway, meme-react and the endcard.
+  const bugWindows: Array<[number, number]> = [
+    [0, beatFrames('cold-open')],
+    [beatStart('setup'), TAPE_START + vsFrom],
+    [TAPE_START + vsFrom + VS_FRAMES, beatStart('meme-react')],
+    [beatStart('zoom'), beatStart('endcard')],
+  ];
 
   return (
     <AbsoluteFill style={{background: COLORS.canvas}}>
@@ -386,6 +422,18 @@ export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => 
             <Audio src={sfx('tick')} volume={0.3} />
           </Sequence>
         ))}
+        {/* move-fomc face-off: WARSH vs POWELL, then back to the chart */}
+        <Sequence from={vsFrom} durationInFrames={VS_FRAMES} name="Versus: Warsh v Powell">
+          <VersusCard
+            left={{asset: warsh, label: 'WARSH', stat: '9 OF 18 SEE A HIKE'}}
+            right={{asset: powell, label: 'POWELL', stat: 'CUT 3x IN 2025'}}
+          />
+        </Sequence>
+        {/* hard 2-frame flashes bracketing the cutaway */}
+        <CutFlash at={vsFrom} />
+        <Sequence from={vsFrom + VS_FRAMES} durationInFrames={2} name="VS out flash">
+          <AbsoluteFill style={{background: '#ffffff'}} />
+        </Sequence>
       </Sequence>
 
       {/* ---- meme-react ---- */}
@@ -395,10 +443,11 @@ export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => 
         name="Meme react"
       >
         <MemeCutaway
+          asset={thisIsFine}
           src="assets/mascot/v2/panic.png"
           kind="image"
-          caption="live look at bond traders"
-          credit="mascot cam"
+          caption="live look at the bond market"
+          credit={thisIsFine ? 'meme desk' : 'mascot cam'}
         />
       </Sequence>
 
@@ -421,6 +470,13 @@ export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => 
       {/* ---- so-what: full tape, slow drift ---- */}
       <Sequence from={beatStart('so-what')} durationInFrames={beatFrames('so-what')} name="So what">
         <SoWhat data={episode} />
+        {/* mid-beat prop pops at the chart's edges — small, off the line */}
+        <Sequence from={170} durationInFrames={220} name="Prop: rate dial">
+          <PropPop asset={rateDial} label="RATE DIAL" x="8%" y="77%" size={140} wobble />
+        </Sequence>
+        <Sequence from={300} durationInFrames={200} name="Prop: cpi flame">
+          <PropPop asset={cpiFlame} label="CPI" x="94%" y="33%" size={120} wobble />
+        </Sequence>
       </Sequence>
 
       {/* ---- endcard: resolution watch ---- */}
@@ -438,6 +494,22 @@ export const FedHikeEpisode: React.FC<{data: EpisodeData | null}> = ({data}) => 
           <Audio src={sfx('ka-ching')} volume={0.4} />
         </Sequence>
       </Sequence>
+
+      {/* "network bug" goblin watermark over the chart scenes */}
+      {bugWindows.map(([from, to]) => (
+        <Sequence key={from} from={from} durationInFrames={to - from} name={`Network bug ${from}`}>
+          <AbsoluteFill style={{pointerEvents: 'none'}}>
+            <div style={{position: 'absolute', right: 30, bottom: 26, opacity: 0.9}}>
+              <SpriteLoop
+                asset={goblinBug}
+                fallbackSrc="assets/mascot/v2/deadpan-alpha.png"
+                fps={6}
+                size={120}
+              />
+            </div>
+          </AbsoluteFill>
+        </Sequence>
+      ))}
 
       {/* CAPTIONS PLACEHOLDER: no VO yet. Once vo/words.json exists, mount
           <CaptionLayer timeline={words} /> across the narrated beats. */}

@@ -9,14 +9,39 @@ import {
 } from 'remotion';
 import {COLORS, hardShadow, inkAlpha, pixelBorder} from '../theme/theme';
 import {PIXEL_FAMILY, MONO_FAMILY} from '../fonts';
+import {AssetEntry, assetSrc} from '../assets';
+
+/**
+ * Text composited onto a blank region of the meme art (e.g. the button
+ * label on panic-button.png). Positioned in % of the image card.
+ */
+export interface MemeOverlay {
+  text: string;
+  /** Center of the overlay, in % of the card (0-100). */
+  x: number;
+  y: number;
+  fontSize?: number;
+  color?: string;
+  /** Omit for bare text straight on the art. */
+  background?: string;
+  rotate?: number;
+}
 
 export interface MemeCutawayProps {
-  /** Path relative to public/, e.g. "memes/this-is-fine.mp4". */
+  /**
+   * Manifest entry (preferred): resolve via resolveMeme(manifest, intent)
+   * or resolveAsset(manifest, id) in the episode and pass it here.
+   * Takes precedence over `src` when present.
+   */
+  asset?: AssetEntry | null;
+  /** Path relative to public/, e.g. "assets/mascot/v2/panic.png". */
   src?: string;
   kind?: 'image' | 'video';
   caption?: string;
   /** Optional attribution / source line, small. */
   credit?: string;
+  /** Text composited onto blank regions of the art. */
+  overlays?: MemeOverlay[];
 }
 
 /**
@@ -24,14 +49,19 @@ export interface MemeCutawayProps {
  * caption slot. Enters and exits in 2-3 hard frames — no soft fades.
  */
 export const MemeCutaway: React.FC<MemeCutawayProps> = ({
+  asset,
   src,
   kind = 'image',
   caption,
   credit,
+  overlays,
 }) => {
   const frame = useCurrentFrame();
   const {width, height, durationInFrames} = useVideoConfig();
   const portrait = height > width;
+
+  // Manifest asset wins; then the explicit src; then the checkerboard slot.
+  const resolvedSrc = asset ? assetSrc(asset.file) : src ? staticFile(src) : null;
 
   // Hard stepped entrance / exit: 0.92 -> 1.02 -> 1.0 over 3 frames.
   const inScale = frame === 0 ? 0.92 : frame === 1 ? 1.02 : 1;
@@ -60,6 +90,7 @@ export const MemeCutaway: React.FC<MemeCutawayProps> = ({
       >
         <div
           style={{
+            position: 'relative',
             width: cardW,
             height: cardH,
             background: COLORS.card,
@@ -71,16 +102,16 @@ export const MemeCutaway: React.FC<MemeCutawayProps> = ({
             justifyContent: 'center',
           }}
         >
-          {src ? (
+          {resolvedSrc ? (
             kind === 'video' ? (
               <OffthreadVideo
-                src={staticFile(src)}
+                src={resolvedSrc}
                 style={{width: '100%', height: '100%', objectFit: 'cover'}}
                 muted
               />
             ) : (
               <Img
-                src={staticFile(src)}
+                src={resolvedSrc}
                 style={{width: '100%', height: '100%', objectFit: 'cover'}}
               />
             )
@@ -112,6 +143,30 @@ export const MemeCutaway: React.FC<MemeCutawayProps> = ({
               </span>
             </div>
           )}
+          {/* text composited onto blank regions of the art */}
+          {(overlays ?? []).map((o, i) => (
+            <span
+              key={i}
+              style={{
+                position: 'absolute',
+                left: `${o.x}%`,
+                top: `${o.y}%`,
+                transform: `translate(-50%, -50%) rotate(${o.rotate ?? 0}deg)`,
+                fontFamily: PIXEL_FAMILY,
+                fontSize: o.fontSize ?? 26,
+                lineHeight: 1.5,
+                textAlign: 'center',
+                color: o.color ?? COLORS.ink,
+                background: o.background,
+                border: o.background ? pixelBorder(3) : undefined,
+                padding: o.background ? '8px 12px' : undefined,
+                whiteSpace: 'pre-wrap',
+                maxWidth: '46%',
+              }}
+            >
+              {o.text.toUpperCase()}
+            </span>
+          ))}
         </div>
         {caption ? (
           <div
