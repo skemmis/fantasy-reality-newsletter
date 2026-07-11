@@ -174,6 +174,26 @@ keeps doing thumbnails, static insert stills, and the newsletter.
   survives cancellation for published work — prefer over Storyblocks
   consumer tiers).
 
+### The asset layer (decided, in build)
+Every episode draws from a tagged library at `video/public/assets/`
+(manifest: `assets.json`, resolved by id or `meme_intent` tag from the
+episode spec). All generated in house style via Nano Banana Pro — ownable,
+copyright-clean, and visually consistent:
+- **portraits/** — pixel caricatures of the episode's real people (Warsh,
+  Powell, …) with name-plate chips; `VersusCard` split-screens for
+  conflicts. Editorial caricature of public figures in news commentary;
+  if the model refuses a likeness, use an archetype + name chip.
+- **props/** — recurring icon vocabulary (money printer, rate dial, dot
+  plot, oil barrel, tariff crate, CPI flame, gavel) popped in via
+  `PropPop` as the VO mentions them.
+- **loops/** — 3-frame sprite loops (printer, flame, coin spin) cycled by
+  `SpriteLoop`; our native, license-free answer to reaction GIFs.
+- **memes/** — classic meme *formats* re-cast with the goblin (formats
+  aren't protectable; specific photos are).
+- **backdrops/** — news-desk set, Fed façade.
+- Licensed real GIFs/clips (Klipy/Imgflip) remain Phase 2, pending
+  written licensing confirmation.
+
 ### Generative image & video — Gemini stays, plus Veo seasoning
 - **Images: Nano Banana 2 / Pro** (already integrated for sprites).
   Conversational editing + character consistency is exactly what the
