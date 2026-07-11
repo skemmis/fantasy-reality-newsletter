@@ -249,6 +249,16 @@ optional later; ElevenLabs timestamps + Remotion captions cover the need).
 
 ## 6. Roadmap
 
+> **Status (2026-07-11):** Phase 0 is DONE and Phase 1 is largely done —
+> exporters + real fedhike data (steps 1–4), Remotion workspace with the
+> full component library and verified test renders (`video/`, see
+> `video/out/` targets), VO tooling for both TTS and recorded audio
+> (step 5, pending an ElevenLabs key), mascot candidates generated
+> (step 6), pilot script written with fact-checked annotation beats
+> (step 7 — awaiting VO + assembly). Remaining for the pilot: pick
+> mascot + voice, provide ELEVENLABS_API_KEY (or record VO), generate
+> VO, wire real timings into `PilotFedHike`, music/SFX, final render.
+
 **Phase 0 — Foundations (repo work, ~a week of evenings)**
 1. Export `theme-tokens.json` from `fr_newsletter/viz/theme.py`.
 2. Add a `video/` Remotion workspace; install `remotion-dev/skills`.
