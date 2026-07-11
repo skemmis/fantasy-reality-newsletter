@@ -1,0 +1,63 @@
+# Episode spec: maps script beats -> scenes/components/assets.
+# Consumed by the Remotion composition (src/episodes/fedhike.tsx); timings
+# come from vo/words.json once VO exists (each beat starts at the start of
+# its first narration line). Durations below are pre-VO estimates in seconds.
+
+slug: fedhike
+title: "The market says: 51% the Fed HIKES this year"
+format: { width: 1920, height: 1080, fps: 30 }
+data: data.json          # exported by scripts/export_episode_data.py
+vo: vo/words.json        # exported by scripts/vo_make_timeline.py
+music: null              # TODO: Epidemic Sound bed, drop in public/assets/music/
+scenes:
+  - beat: cold-open
+    scene: MarketChartScene
+    est: 10
+    props: { revealUntil: end, showCounter: true, freeze: true, dim: true }
+    note: counter alone on dimmed card; "51%" huge; line hidden until the-tape
+  - beat: title
+    scene: KineticTitle
+    est: 3
+    props: { words: ["THE", "MARKET", "SAYS"], accent: magenta, kicker: "ep 01" }
+  - beat: setup
+    scene: MarketChartScene
+    est: 28
+    props: { revealUntil: 0.15, showCursor: true, showCounter: true }
+    overlays:
+      - { type: statCard, text: "HIKE by Dec 31 2026 — 51%" }
+      - { type: statCard, text: "CUT by Dec 31 2026 — 25%" }
+  - beat: the-tape
+    scene: MarketChartScene
+    est: 14
+    props: { revealFrom: 0.0, revealUntil: 0.55, showCursor: true, showCounter: true }
+  - beat: move-1
+    scene: MarketChartScene
+    est: 8
+    props: { annotationsThrough: move-1 }
+  - beat: move-2
+    scene: MarketChartScene
+    est: 8
+    props: { annotationsThrough: move-2 }
+  - beat: meme-react
+    scene: MemeCutaway
+    est: 3
+    props: { meme_intent: "nervous sweating / this is fine", asset: null } # resolver TODO
+  - beat: zoom
+    scene: MarketChartScene
+    est: 10
+    props: { window: TODO-from-moves, revealUntil: 1.0, showCursor: true, showCounter: true }
+  - beat: so-what
+    scene: MarketChartScene
+    est: 20
+    props: { revealUntil: 1.0, freeze: true }
+  - beat: endcard
+    scene: EndCard
+    est: 12
+    props:
+      rows:
+        - { ticker: FEDHIKE-26DEC31, label: "Fed hike by Dec 31, 2026", covered: "51%", status: OPEN }
+intro_cam:              # optional human cold-open (Sam on camera) — slots before cold-open
+  enabled: false
+  src: null             # drop a clip at public/episodes/fedhike/intro.mp4 and set enabled
+  lower_third: "SAM — definitely a financial professional"
+captions: { style: word-pop, page_words: 4 }

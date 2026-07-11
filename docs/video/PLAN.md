@@ -119,6 +119,17 @@ keeps doing thumbnails, static insert stills, and the newsletter.
   code-driven).
 
 ### Voiceover — **ElevenLabs Eleven v3**, retakes on OpenAI
+> **Register (decided):** deadpan, straight financial-news anchor — Good
+> Work energy. Measured cadence, jokes written into the script and read
+> flat; tags used sparingly (`[deadpan]`, `[pause]`), higher stability.
+>
+> **Human option (kept first-class):** Sam records the VO — and optionally
+> an on-camera cold-open clip — instead of TTS. The pipeline treats both
+> identically: recorded audio goes through forced alignment (WhisperX) to
+> produce the same word-timed `words.json` that ElevenLabs timestamps
+> produce, and the composition has an `IntroCam` scene slot for the
+> talking-head clip. Decide per episode; a human intro + TTS body also
+> works.
 - v3 (GA Feb 2026) is the most expressive model shipped and the best fit
   for the deadpan-snark register: inline audio tags — `[sarcastic]`
   `[deadpan]` `[whispers]` `[pause]` `[rushed]` `[drawn out]`
@@ -279,7 +290,22 @@ pundits) · "who IPOs next" (SpaceX/OpenAI markets).
 
 ---
 
-## 7. Open decisions
+## 7. Accounts & credentials needed
+
+| What | Why | Needed when | How to provide |
+|---|---|---|---|
+| **ElevenLabs API key** (`ELEVENLABS_API_KEY`, + `ELEVENLABS_VOICE_ID` once a voice is picked) | VO generation with word timestamps. Creator tier ($22/mo) is enough to start; enable commercial use (included Creator+). | Before first VO render | Env var in the Claude Code environment settings (or Railway if we render there) |
+| Gemini API key | Nano Banana sprites/mascot + Veo cutaways | **Already present** (`AI_INTEGRATIONS_GEMINI_API_KEY`) | — |
+| OpenAI API key (optional) | Near-free bulk VO retakes via gpt-4o-mini-tts | Phase 2 | Env var |
+| Imgflip Premium ($9.99/mo, optional) | Programmatic captioned meme templates | Phase 2 | Username/password env vars |
+| Epidemic Sound ($25/mo commercial) | Music beds + SFX, Content ID pre-cleared | Before first *published* episode | Manual download; drop files in `video/public/assets/music|sfx/` |
+| Klipy production key | GIF/clip API (Tenor successor) | Phase 2, after emailing them to confirm baked-into-video licensing | Env var |
+| YouTube channel | Publishing; tick "altered/synthetic content" for TTS episodes | Publish time | Manual |
+
+No signup needed: Kalshi market data (public API), Remotion (free at this
+team size), DaVinci Resolve, Pexels/Pixabay, jsfxr.
+
+## 8. Open decisions
 
 1. **Show name / mascot concept** — needs taste, not research.
 2. **Voice identity** — pick a v3 library voice vs. commission a
