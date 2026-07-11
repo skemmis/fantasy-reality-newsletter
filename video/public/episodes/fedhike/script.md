@@ -7,7 +7,10 @@ stage directions / TODOs and are never read aloud.
 
 All odds below verified against the Kalshi API on 2026-07-11:
 FEDHIKE-26DEC31 last 51¢ ($1.27M vol), KXRATECUT-26DEC31 last 25¢,
-FEDHIKE-27DEC31 last 75¢.
+FEDHIKE-27DEC31 last 75¢. Move causes verified against dated news (see
+annotations.json). NOTE: re-export data.json and re-verify the headline
+number the day VO is recorded — narrated numbers must match the on-screen
+counter, which reads from the chart data.
 
 [beat:cold-open]
 
@@ -33,27 +36,37 @@ For reference, the same crowd puts a rate *cut* this year at twenty-five percent
 
 Here's the tape.
 
-<!-- chart draws on from market open (Mar 2025) to now; cursor + odds counter -->
+<!-- chart draws on from market open (Mar 2025); cursor + odds counter -->
 
-This market opened in March of twenty-twenty-five, back when a hike was priced like a conspiracy theory.
+This market opened in March of twenty-twenty-five. Quick reminder of where we actually are: the Fed *cut* rates three times at the end of last year. Cut. The current target is three-and-a-half to three-seventy-five. The last actual move was down.
 
-[beat:move-1]
+[beat:move-tariffs]
 
-<!-- TODO(annotation): largest move #1 — date, from→to, verified cause. -->
+<!-- annotation: 2025-04-02 Liberation Day tariffs; odds whipsawed 49→30→49→30 -->
 
-[beat:move-2]
+In April of twenty-five, tariffs hit, and this market had a full identity crisis — forty-nine, thirty, forty-nine, thirty — because tariffs raise prices, which says hike, and also kill growth, which says cut. The market chose "yes."
 
-<!-- TODO(annotation): largest move #2 — date, from→to, verified cause. -->
+[beat:move-jobs]
+
+<!-- annotation: 2026-06-05 jobs +172K vs 80K consensus -->
+
+Then this June, the economy stopped cooperating with the cuts story. June fifth: the jobs report comes in at a hundred seventy-two thousand — consensus said eighty. Ten points, overnight.
+
+[beat:move-fomc]
+
+<!-- annotation: 2026-06-17 FOMC, Chair Warsh's first meeting, dots flip hawkish -->
+
+And on June seventeenth, the new Fed chair ran his first meeting, held rates… and released projections showing nine of eighteen officials now expect a *hike* this year. The market moved twenty-two points in a day. That's not a repricing; that's a religious conversion.
 
 [beat:meme-react]
 
-<!-- meme_intent: "nervous sweating" or "this is fine" — market grinding upward -->
+<!-- meme_intent: "nervous sweating" / "this is fine" — market grinding upward -->
 
 [beat:zoom]
 
-<!-- x-domain zooms into the decisive window from moves.md -->
+<!-- x-domain zooms into May 15 – Jul 11, 2026 (the hourly close-up window) -->
 
-And then it just… kept going. Which brings us to today: fifty-one. A number whose entire personality is "no idea, but armed."
+Zoom in on the last two months and you can watch the whole regime change in real time: inflation back above four percent, oil doing oil things, and a committee that has stopped saying the word "cuts." Which brings us to today: fifty-one. A number whose entire personality is "no idea, but armed."
 
 [beat:so-what]
 

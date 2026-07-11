@@ -30,22 +30,30 @@ scenes:
     scene: MarketChartScene
     est: 14
     props: { revealFrom: 0.0, revealUntil: 0.55, showCursor: true, showCounter: true }
-  - beat: move-1
+  - beat: move-tariffs
     scene: MarketChartScene
-    est: 8
-    props: { annotationsThrough: move-1 }
-  - beat: move-2
+    est: 12
+    props: { annotationsThrough: move-tariffs, revealUntil: "2025-05-01" }
+  - beat: move-jobs
     scene: MarketChartScene
-    est: 8
-    props: { annotationsThrough: move-2 }
+    est: 10
+    props: { annotationsThrough: move-jobs, revealUntil: "2026-06-08" }
+  - beat: move-fomc
+    scene: MarketChartScene
+    est: 12
+    props: { annotationsThrough: move-fomc, revealUntil: "2026-06-20" }
   - beat: meme-react
     scene: MemeCutaway
     est: 3
     props: { meme_intent: "nervous sweating / this is fine", asset: null } # resolver TODO
   - beat: zoom
     scene: MarketChartScene
-    est: 10
-    props: { window: TODO-from-moves, revealUntil: 1.0, showCursor: true, showCounter: true }
+    est: 12
+    props:
+      window: { start: "2026-05-15", end: "2026-07-11" }  # or swap to fedhike-closeup 1h data
+      revealUntil: 1.0
+      showCursor: true
+      showCounter: true
   - beat: so-what
     scene: MarketChartScene
     est: 20

@@ -1,0 +1,6 @@
+[
+  {"t": "2025-04-02T20:00:00Z", "label": "'LIBERATION DAY' TARIFFS\nodds whipsaw 49→30→49", "dx": 0, "dy": -30, "id": "move-tariffs"},
+  {"t": "2025-12-10T19:00:00Z", "label": "the Fed... CUTS\n(3rd in a row)", "dx": -10, "dy": -40, "id": "move-cut"},
+  {"t": "2026-06-05T12:30:00Z", "label": "JOBS: +172K\nconsensus was 80K", "dx": -20, "dy": -35, "id": "move-jobs"},
+  {"t": "2026-06-17T18:00:00Z", "label": "FOMC: dots flip hawkish\n9 of 18 see a hike", "dx": 10, "dy": -50, "id": "move-fomc"}
+]
