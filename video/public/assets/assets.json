@@ -422,6 +422,441 @@
       "note": "Pixel-art money printer furiously printing bills flying off-screen, side view, 16-bit retro. 1280x720 8s.",
       "source": "veo-3.1-generate-preview (text-to-video)",
       "license": "generated"
+    },
+    {
+      "id": "mascot-pointing",
+      "kind": "mascot",
+      "file": "mascot/v2/pointing.png",
+      "alpha": "mascot/v2/pointing-alpha.png",
+      "label": null,
+      "tags": [
+        "mascot",
+        "goblin",
+        "point",
+        "pointing",
+        "excited",
+        "look",
+        "gesture",
+        "react"
+      ],
+      "loop": null,
+      "note": "Excitedly pointing off-frame, face still deadpan."
+    },
+    {
+      "id": "mascot-money-shower",
+      "kind": "mascot",
+      "file": "mascot/v2/money-shower.png",
+      "alpha": "mascot/v2/money-shower-alpha.png",
+      "label": null,
+      "tags": [
+        "mascot",
+        "goblin",
+        "money",
+        "cash",
+        "celebrate",
+        "rich",
+        "make-it-rain",
+        "bills",
+        "printer",
+        "brrr"
+      ],
+      "loop": null,
+      "note": "Arms up, cash and coins raining down; deadpan throughout."
+    },
+    {
+      "id": "mascot-crying",
+      "kind": "mascot",
+      "file": "mascot/v2/crying.png",
+      "alpha": "mascot/v2/crying-alpha.png",
+      "label": null,
+      "tags": [
+        "mascot",
+        "goblin",
+        "cry",
+        "crying",
+        "tear",
+        "sad",
+        "loss",
+        "react"
+      ],
+      "loop": null,
+      "note": "A single dignified tear on an otherwise deadpan face."
+    },
+    {
+      "id": "mascot-thumbs-up",
+      "kind": "mascot",
+      "file": "mascot/v2/thumbs-up.png",
+      "alpha": "mascot/v2/thumbs-up-alpha.png",
+      "label": null,
+      "tags": [
+        "mascot",
+        "goblin",
+        "thumbs-up",
+        "approve",
+        "yes",
+        "ok",
+        "good",
+        "react"
+      ],
+      "loop": null,
+      "note": "Maximally unenthusiastic thumbs-up."
+    },
+    {
+      "id": "mascot-talk",
+      "kind": "mascot",
+      "file": "mascot/v2/talk-1.png",
+      "alpha": "mascot/v2/talk-1-alpha.png",
+      "label": null,
+      "tags": [
+        "mascot",
+        "goblin",
+        "talk",
+        "talking",
+        "anchor",
+        "mouth",
+        "lipsync",
+        "loop",
+        "animation"
+      ],
+      "loop": [
+        "mascot/v2/talk-1-alpha.png",
+        "mascot/v2/talk-2-alpha.png"
+      ],
+      "note": "2-frame talking-head loop (mouth closed then open); frames registered on a common bbox."
+    },
+    {
+      "id": "hawk",
+      "kind": "cast",
+      "file": "cast/hawk.png",
+      "alpha": "cast/hawk-alpha.png",
+      "label": null,
+      "tags": [
+        "hawk",
+        "hawkish",
+        "fed",
+        "bird",
+        "hawk-dove",
+        "rates",
+        "hike",
+        "tie",
+        "stern"
+      ],
+      "loop": null,
+      "note": "Fierce pixel hawk with a tiny teal necktie; the hawkish half of the hawk/dove bit."
+    },
+    {
+      "id": "dove",
+      "kind": "cast",
+      "file": "cast/dove.png",
+      "alpha": "cast/dove-alpha.png",
+      "label": null,
+      "tags": [
+        "dove",
+        "dovish",
+        "fed",
+        "bird",
+        "hawk-dove",
+        "peace",
+        "flower",
+        "cut",
+        "rates",
+        "serene"
+      ],
+      "loop": null,
+      "note": "Serene pixel dove holding a flower; the dovish half of the hawk/dove bit."
+    },
+    {
+      "id": "warsh-hawk",
+      "kind": "cast",
+      "file": "cast/warsh-hawk.png",
+      "alpha": "cast/warsh-hawk-alpha.png",
+      "label": null,
+      "tags": [
+        "warsh",
+        "fed",
+        "chair",
+        "hawk",
+        "hawkish",
+        "shoulder",
+        "stern",
+        "hawk-dove",
+        "banker"
+      ],
+      "loop": null,
+      "note": "Warsh with the hawk perched on his shoulder, both stern. Generated with warsh.png as reference."
+    },
+    {
+      "id": "powell-wave",
+      "kind": "cast",
+      "file": "cast/powell-wave.png",
+      "alpha": "cast/powell-wave-alpha.png",
+      "label": null,
+      "tags": [
+        "powell",
+        "fed",
+        "chair",
+        "former",
+        "wave",
+        "goodbye",
+        "farewell",
+        "exit",
+        "sad",
+        "banker"
+      ],
+      "loop": null,
+      "note": "Powell waving goodbye with a wistful smile. Generated with powell.png as reference."
+    },
+    {
+      "id": "oracle",
+      "kind": "cast",
+      "file": "cast/oracle.png",
+      "alpha": "cast/oracle-alpha.png",
+      "label": null,
+      "tags": [
+        "oracle",
+        "forecast",
+        "seer",
+        "fortune",
+        "crystal-ball",
+        "prediction",
+        "percent",
+        "mystic",
+        "odds",
+        "future"
+      ],
+      "loop": null,
+      "note": "Hooded seer with a crystal ball showing a %; the recurring 'forecast' bit character."
+    },
+    {
+      "id": "hawk-flap",
+      "kind": "cast",
+      "file": "cast/hawk-flap-1-alpha.png",
+      "alpha": "cast/hawk-flap-1-alpha.png",
+      "label": null,
+      "tags": [
+        "hawk",
+        "hawkish",
+        "bird",
+        "fly",
+        "flap",
+        "wings",
+        "loop",
+        "animation",
+        "fed"
+      ],
+      "loop": [
+        "cast/hawk-flap-1-alpha.png",
+        "cast/hawk-flap-2-alpha.png"
+      ],
+      "note": "2-frame hawk wing-flap loop (up/down); registered on a common bbox."
+    },
+    {
+      "id": "dove-flap",
+      "kind": "cast",
+      "file": "cast/dove-flap-1-alpha.png",
+      "alpha": "cast/dove-flap-1-alpha.png",
+      "label": null,
+      "tags": [
+        "dove",
+        "dovish",
+        "bird",
+        "fly",
+        "flap",
+        "wings",
+        "loop",
+        "animation",
+        "peace"
+      ],
+      "loop": [
+        "cast/dove-flap-1-alpha.png",
+        "cast/dove-flap-2-alpha.png"
+      ],
+      "note": "2-frame dove wing-flap loop (up/down); registered on a common bbox."
+    },
+    {
+      "id": "bull",
+      "kind": "prop",
+      "file": "props/bull.png",
+      "alpha": "props/bull-alpha.png",
+      "label": null,
+      "tags": [
+        "bull",
+        "bullish",
+        "market",
+        "up",
+        "rally",
+        "statue",
+        "gains",
+        "green",
+        "icon"
+      ],
+      "loop": null,
+      "note": "Chunky charging market-bull statue in gold/bronze."
+    },
+    {
+      "id": "bear",
+      "kind": "prop",
+      "file": "props/bear.png",
+      "alpha": "props/bear-alpha.png",
+      "label": null,
+      "tags": [
+        "bear",
+        "bearish",
+        "market",
+        "down",
+        "crash",
+        "statue",
+        "losses",
+        "red",
+        "icon"
+      ],
+      "loop": null,
+      "note": "Chunky market-bear statue rearing up; the bull's counterpart."
+    },
+    {
+      "id": "rocket",
+      "kind": "prop",
+      "file": "props/rocket.png",
+      "alpha": "props/rocket-alpha.png",
+      "label": null,
+      "tags": [
+        "rocket",
+        "moon",
+        "up",
+        "launch",
+        "pump",
+        "surge",
+        "rally",
+        "to-the-moon",
+        "icon"
+      ],
+      "loop": null,
+      "note": "Retro rocket blasting off with gold flames."
+    },
+    {
+      "id": "breaking-banner",
+      "kind": "prop",
+      "file": "props/breaking-banner.png",
+      "alpha": "props/breaking-banner-alpha.png",
+      "label": "BREAKING",
+      "tags": [
+        "breaking",
+        "news",
+        "banner",
+        "ribbon",
+        "alert",
+        "headline",
+        "lower-third",
+        "chyron"
+      ],
+      "loop": null,
+      "note": "Wide BREAKING news ribbon banner with bold legible pixel type on the ribbon."
+    },
+    {
+      "id": "coin-stack",
+      "kind": "prop",
+      "file": "props/coin-stack.png",
+      "alpha": "props/coin-stack-alpha.png",
+      "label": null,
+      "tags": [
+        "coins",
+        "money",
+        "cash",
+        "stack",
+        "wealth",
+        "savings",
+        "percent",
+        "pile",
+        "icon"
+      ],
+      "loop": null,
+      "note": "Stack of gold percent-sign coins."
+    },
+    {
+      "id": "red-button",
+      "kind": "prop",
+      "file": "props/red-button.png",
+      "alpha": "props/red-button-alpha.png",
+      "label": null,
+      "tags": [
+        "button",
+        "panic",
+        "red",
+        "press",
+        "decision",
+        "launch",
+        "do-not-press",
+        "icon"
+      ],
+      "loop": null,
+      "note": "Big shiny red button on a pedestal; tempting to press."
+    },
+    {
+      "id": "printer-brrr",
+      "kind": "prop",
+      "file": "props/printer-brrr.png",
+      "alpha": "props/printer-brrr-alpha.png",
+      "label": null,
+      "tags": [
+        "money",
+        "printer",
+        "brrr",
+        "print",
+        "stimulus",
+        "cash",
+        "qe",
+        "maximal",
+        "celebrate"
+      ],
+      "loop": null,
+      "note": "Money printer at full blast erupting cash and coins (single maximal frame)."
+    },
+    {
+      "id": "confetti-coin-loop",
+      "kind": "loop",
+      "file": "loops/confetti-coin-1-alpha.png",
+      "alpha": "loops/confetti-coin-1-alpha.png",
+      "label": null,
+      "tags": [
+        "coin",
+        "confetti",
+        "money",
+        "spin",
+        "tumble",
+        "particle",
+        "percent",
+        "gold",
+        "animation"
+      ],
+      "loop": [
+        "loops/confetti-coin-1-alpha.png",
+        "loops/confetti-coin-2-alpha.png",
+        "loops/confetti-coin-3-alpha.png"
+      ],
+      "note": "3-frame tumbling gold coin (face/edge/reverse); small, for particle use. Reverse is a mirror of the face."
+    },
+    {
+      "id": "siren-loop",
+      "kind": "loop",
+      "file": "loops/siren-1-alpha.png",
+      "alpha": "loops/siren-1-alpha.png",
+      "label": null,
+      "tags": [
+        "siren",
+        "alarm",
+        "alert",
+        "emergency",
+        "red",
+        "flash",
+        "blink",
+        "warning",
+        "animation"
+      ],
+      "loop": [
+        "loops/siren-1-alpha.png",
+        "loops/siren-2-alpha.png"
+      ],
+      "note": "2-frame alarm siren blink (on/off)."
     }
   ]
 }
