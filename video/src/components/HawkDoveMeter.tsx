@@ -139,7 +139,10 @@ export const HawkDoveMeter: React.FC<HawkDoveMeterProps> = ({
   }
 
   // ---- geometry ----
-  const cardW = Math.min(1300, width * 0.72);
+  // Portrait (Shorts): 72% of 1080 leaves the gauge tiny — let the card take
+  // most of the width instead (everything inside scales off cardW).
+  const portrait = height > width;
+  const cardW = Math.min(1300, width * (portrait ? 0.88 : 0.72));
   const cardH = Math.min(800, height * 0.74);
   const R = cardW * 0.295;
   const segSize = R * 0.152;
@@ -356,7 +359,12 @@ export const HawkDoveMeter: React.FC<HawkDoveMeterProps> = ({
             <span
               style={{
                 fontFamily: PIXEL_FAMILY,
-                fontSize: 32,
+                // Portrait: smaller type + centered wrap so a long verdict
+                // can't spill past the card edge as one ragged left block.
+                fontSize: portrait ? 25 : 32,
+                lineHeight: portrait ? 1.5 : undefined,
+                maxWidth: portrait ? '84%' : undefined,
+                textAlign: portrait ? 'center' : undefined,
                 color: COLORS.card,
                 background: hawkWins ? COLORS.magenta : tokens.yes,
                 border: pixelBorder(5),

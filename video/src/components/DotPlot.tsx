@@ -60,6 +60,7 @@ export const DotPlot: React.FC<DotPlotProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
+  const portrait = height > width;
   const local = frame - appearFrame;
 
   // Rate levels: every 0.25 step across the data's range, top-down.
@@ -89,7 +90,9 @@ export const DotPlot: React.FC<DotPlotProps> = ({
 
   // ---- layout ----
   const pad = Math.round(width * 0.05);
-  const headerH = 108;
+  // Portrait (Shorts): the nowrap title + right-aligned subtitle collide at
+  // 1080w, so the header stacks into two rows instead.
+  const headerH = portrait ? 128 : 108;
   const cardW = width - pad * 2;
   const cardH = height - pad * 2 - headerH;
   const axisW = 150;
@@ -134,9 +137,10 @@ export const DotPlot: React.FC<DotPlotProps> = ({
         style={{
           height: headerH,
           display: 'flex',
+          flexDirection: portrait ? 'column' : 'row',
           alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 24,
+          justifyContent: portrait ? 'flex-start' : 'space-between',
+          gap: portrait ? 16 : 24,
         }}
       >
         <div style={{display: 'flex', alignItems: 'center', gap: 20, minWidth: 0}}>
@@ -157,7 +161,7 @@ export const DotPlot: React.FC<DotPlotProps> = ({
           <span
             style={{
               fontFamily: PIXEL_FAMILY,
-              fontSize: 30,
+              fontSize: portrait ? 25 : 30,
               color: COLORS.ink,
               textShadow: `5px 5px 0 ${inkAlpha(0.15)}`,
               whiteSpace: 'nowrap',
@@ -171,13 +175,13 @@ export const DotPlot: React.FC<DotPlotProps> = ({
             style={{
               fontFamily: MONO_FAMILY,
               fontWeight: 700,
-              fontSize: 19,
+              fontSize: portrait ? 17 : 19,
               lineHeight: 1.55,
               letterSpacing: '0.08em',
               color: COLORS.mutedText,
-              textAlign: 'right',
-              paddingTop: 8,
-              maxWidth: 560,
+              textAlign: portrait ? 'left' : 'right',
+              paddingTop: portrait ? 0 : 8,
+              maxWidth: portrait ? '100%' : 560,
               flexShrink: 0,
             }}
           >

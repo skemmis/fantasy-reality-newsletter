@@ -2,21 +2,29 @@ import React, {useMemo} from 'react';
 import {
   AbsoluteFill,
   Img,
-  Loop,
-  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
-  Easing,
 } from 'remotion';
 import {Audio} from '@remotion/media';
-import {EpisodeData, Market} from '../types';
+import {EpisodeData} from '../types';
 import {sampleEpisode} from '../sample-data';
-import {COLORS, tokens, hardShadow, inkAlpha, pixelBorder} from '../theme/theme';
-import {PIXEL_FAMILY, MONO_FAMILY} from '../fonts';
+import {COLORS, tokens} from '../theme/theme';
+import {MONO_FAMILY} from '../fonts';
+import {
+  ColdOpenStorm,
+  CutFlash,
+  DeskShot,
+  LiveChip,
+  LowerThird,
+  PunchChip,
+  StatCard,
+  makeBeatClock,
+  sfx,
+  valueAt,
+} from './shared';
 import {KineticTitle} from '../components/KineticTitle';
 import {MarketChartScene} from '../components/MarketChartScene';
 import {MemeCutaway} from '../components/MemeCutaway';
@@ -67,20 +75,11 @@ export const BEATS = [
   {id: 'endcard', est: 12},
 ] as const;
 
-type BeatId = (typeof BEATS)[number]['id'];
+const CLOCK = makeBeatClock(BEATS, FPS);
+const beatStart = CLOCK.start;
+const beatFrames = CLOCK.frames;
 
-const beatStart = (id: BeatId): number => {
-  let at = 0;
-  for (const b of BEATS) {
-    if (b.id === id) return at;
-    at += b.est * FPS;
-  }
-  return at;
-};
-const beatFrames = (id: BeatId): number =>
-  (BEATS.find((b) => b.id === id)?.est ?? 0) * FPS;
-
-export const FEDHIKE_DURATION = BEATS.reduce((a, b) => a + b.est * FPS, 0);
+export const FEDHIKE_DURATION = CLOCK.duration;
 
 /**
  * The episode's headline number, as narrated ("Fifty-one percent.") and in
