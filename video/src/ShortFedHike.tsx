@@ -1,11 +1,12 @@
 import React from 'react';
-import {AbsoluteFill, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig, Easing} from 'remotion';
+import {AbsoluteFill, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig, Easing} from 'remotion';
 import {Audio} from '@remotion/media';
 import {EpisodeData} from './types';
 import {COLORS, hardShadow, inkAlpha, pixelBorder} from './theme/theme';
 import {PIXEL_FAMILY, MONO_FAMILY} from './fonts';
 import {AssetManifest, resolveAsset, resolveMeme} from './assets';
-import {ColdOpenStorm, HEADLINE_PCT, DOT_COLUMNS} from './episodes/fedhike';
+import {ColdOpenStorm, CutFlash, sfx} from './episodes/shared';
+import {HEADLINE_PCT, DOT_COLUMNS} from './episodes/fedhike';
 import {BigNumber} from './components/BigNumber';
 import {DotPlot} from './components/DotPlot';
 import {HawkDoveMeter} from './components/HawkDoveMeter';
@@ -29,19 +30,6 @@ const V = {
 };
 
 export const SHORT_FEDHIKE_DURATION = V.end;
-
-const sfx = (name: string) => staticFile(`assets/sfx/${name}.wav`);
-
-const CutFlash: React.FC<{at: number}> = ({at}) => (
-  <>
-    <Sequence from={at} durationInFrames={2} name="Cut flash">
-      <AbsoluteFill style={{background: '#ffffff'}} />
-    </Sequence>
-    <Sequence from={at} durationInFrames={14} name="Cut thud" layout="none">
-      <Audio src={sfx('thud')} volume={0.45} />
-    </Sequence>
-  </>
-);
 
 /** End slate: huge 51% + THE MARKET SAYS wordmark. */
 const EndSlate: React.FC<{pct: number}> = ({pct}) => {
