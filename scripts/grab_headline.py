@@ -123,7 +123,16 @@ def grab(url: str, slug: str, selector: str | None, out_dir: Path) -> dict:
     json_path = out_dir / f"{slug}.json"
 
     exe = find_chromium()
-    launch_kwargs = {"headless": True}
+    # --no-sandbox: we run as root in the container.
+    # --ssl-version-max=tls1.2: the agent proxy re-terminates TLS but resets on
+    #   Chromium's large TLS-1.3 post-quantum ClientHello; capping at 1.2 avoids
+    #   the reset. Cert verification stays ON (proxy CA is in the system store).
+    chromium_args = [
+        "--no-sandbox",
+        "--disable-gpu",
+        "--ssl-version-max=tls1.2",
+    ]
+    launch_kwargs = {"headless": True, "args": chromium_args}
     if exe:
         launch_kwargs["executable_path"] = exe
 
@@ -147,7 +156,14 @@ def grab(url: str, slug: str, selector: str | None, out_dir: Path) -> dict:
         if dismissed:
             page.wait_for_timeout(600)
 
+        # Some sites (e.g. CNBC) render a "Loading ..." placeholder <title> that
+        # JS swaps for the real one; poll briefly so the sidecar is accurate.
         title = page.title()
+        for _ in range(10):
+            if title and not title.lower().startswith("loading"):
+                break
+            page.wait_for_timeout(500)
+            title = page.title()
 
         meta = {
             "url": url,

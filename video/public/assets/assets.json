@@ -6,7 +6,14 @@
       "file": "portraits/warsh.png",
       "alpha": "portraits/warsh-alpha.png",
       "label": "KEVIN WARSH",
-      "tags": ["fed", "chair", "hawkish", "banker", "official", "portrait"],
+      "tags": [
+        "fed",
+        "chair",
+        "hawkish",
+        "banker",
+        "official",
+        "portrait"
+      ],
       "loop": null,
       "note": "Editorial caricature of the current Fed chair; stern hawkish bust, front-facing."
     },
@@ -16,7 +23,14 @@
       "file": "portraits/powell.png",
       "alpha": "portraits/powell-alpha.png",
       "label": "JEROME POWELL",
-      "tags": ["fed", "chair", "former", "banker", "official", "portrait"],
+      "tags": [
+        "fed",
+        "chair",
+        "former",
+        "banker",
+        "official",
+        "portrait"
+      ],
       "note": "Editorial caricature of the predecessor Fed chair; tired white-haired bust. Generated with warsh raw as framing reference to match scale.",
       "loop": null
     },
@@ -26,7 +40,14 @@
       "file": "props/rate-dial.png",
       "alpha": "props/rate-dial-alpha.png",
       "label": null,
-      "tags": ["rates", "interest", "gauge", "dial", "hike", "icon"],
+      "tags": [
+        "rates",
+        "interest",
+        "gauge",
+        "dial",
+        "hike",
+        "icon"
+      ],
       "loop": null,
       "note": "Interest-rate gauge, needle pointing up into danger zone."
     },
@@ -36,7 +57,14 @@
       "file": "props/dot-plot.png",
       "alpha": "props/dot-plot-alpha.png",
       "label": null,
-      "tags": ["fed", "dot-plot", "projection", "chart", "forecast", "icon"],
+      "tags": [
+        "fed",
+        "dot-plot",
+        "projection",
+        "chart",
+        "forecast",
+        "icon"
+      ],
       "loop": null,
       "note": "Fed dot-plot projection card."
     },
@@ -46,7 +74,14 @@
       "file": "props/cpi-flame.png",
       "alpha": "props/cpi-flame-alpha.png",
       "label": null,
-      "tags": ["cpi", "inflation", "prices", "flame", "hot", "icon"],
+      "tags": [
+        "cpi",
+        "inflation",
+        "prices",
+        "flame",
+        "hot",
+        "icon"
+      ],
       "loop": null,
       "note": "Flame burning a price tag; rising consumer prices."
     },
@@ -56,7 +91,14 @@
       "file": "props/gavel.png",
       "alpha": "props/gavel-alpha.png",
       "label": null,
-      "tags": ["gavel", "decision", "ruling", "policy", "auction", "icon"],
+      "tags": [
+        "gavel",
+        "decision",
+        "ruling",
+        "policy",
+        "auction",
+        "icon"
+      ],
       "loop": null,
       "note": "Judge/auctioneer gavel on sound block."
     },
@@ -66,7 +108,14 @@
       "file": "props/money-printer.png",
       "alpha": "props/money-printer-alpha.png",
       "label": null,
-      "tags": ["money", "printer", "stimulus", "cash", "qe", "icon"],
+      "tags": [
+        "money",
+        "printer",
+        "stimulus",
+        "cash",
+        "qe",
+        "icon"
+      ],
       "loop": null,
       "note": "Currency printer ejecting a percent-sign bill; regenerated (v1 was a blob)."
     },
@@ -76,7 +125,14 @@
       "file": "props/oil-barrel.png",
       "alpha": "props/oil-barrel-alpha.png",
       "label": null,
-      "tags": ["oil", "energy", "barrel", "commodity", "crude", "icon"],
+      "tags": [
+        "oil",
+        "energy",
+        "barrel",
+        "commodity",
+        "crude",
+        "icon"
+      ],
       "loop": null,
       "note": "Oil drum with gold hoops and oil-drop; regenerated twice (graph-paper bg, then stray frame removed)."
     },
@@ -86,7 +142,14 @@
       "file": "props/tariff-crate.png",
       "alpha": "props/tariff-crate-alpha.png",
       "label": null,
-      "tags": ["tariff", "trade", "crate", "import", "shipping", "icon"],
+      "tags": [
+        "tariff",
+        "trade",
+        "crate",
+        "import",
+        "shipping",
+        "icon"
+      ],
       "loop": null,
       "note": "Single shipping crate with a percent-sign tariff tag; regenerated (v1 cluttered)."
     },
@@ -96,8 +159,18 @@
       "file": "loops/printer-1-alpha.png",
       "alpha": "loops/printer-1-alpha.png",
       "label": null,
-      "tags": ["money", "printer", "print", "cash", "animation"],
-      "loop": ["loops/printer-1-alpha.png", "loops/printer-2-alpha.png", "loops/printer-3-alpha.png"],
+      "tags": [
+        "money",
+        "printer",
+        "print",
+        "cash",
+        "animation"
+      ],
+      "loop": [
+        "loops/printer-1-alpha.png",
+        "loops/printer-2-alpha.png",
+        "loops/printer-3-alpha.png"
+      ],
       "note": "3-frame printer loop, bill emerging progressively. Frames 2-3 via conversational edit of frame 1."
     },
     {
@@ -106,8 +179,18 @@
       "file": "loops/flame-1-alpha.png",
       "alpha": "loops/flame-1-alpha.png",
       "label": null,
-      "tags": ["flame", "fire", "inflation", "hot", "animation"],
-      "loop": ["loops/flame-1-alpha.png", "loops/flame-2-alpha.png", "loops/flame-3-alpha.png"],
+      "tags": [
+        "flame",
+        "fire",
+        "inflation",
+        "hot",
+        "animation"
+      ],
+      "loop": [
+        "loops/flame-1-alpha.png",
+        "loops/flame-2-alpha.png",
+        "loops/flame-3-alpha.png"
+      ],
       "note": "3-frame flicker loop. Frame 1 regenerated (graph-paper bg); 2-3 via conversational edit."
     },
     {
@@ -116,8 +199,18 @@
       "file": "loops/coin-1-alpha.png",
       "alpha": "loops/coin-1-alpha.png",
       "label": null,
-      "tags": ["coin", "money", "spin", "percent", "animation"],
-      "loop": ["loops/coin-1-alpha.png", "loops/coin-2-alpha.png", "loops/coin-3-alpha.png"],
+      "tags": [
+        "coin",
+        "money",
+        "spin",
+        "percent",
+        "animation"
+      ],
+      "loop": [
+        "loops/coin-1-alpha.png",
+        "loops/coin-2-alpha.png",
+        "loops/coin-3-alpha.png"
+      ],
       "note": "3-frame coin-spin loop: face, edge, reversed face. Frames 2-3 via conversational edit."
     },
     {
@@ -126,7 +219,15 @@
       "file": "memes/this-is-fine.png",
       "alpha": "memes/this-is-fine-alpha.png",
       "label": null,
-      "tags": ["this is fine", "fine", "fire", "calm", "denial", "chaos", "meme"],
+      "tags": [
+        "this is fine",
+        "fine",
+        "fire",
+        "calm",
+        "denial",
+        "chaos",
+        "meme"
+      ],
       "loop": null,
       "note": "Goblin sipping coffee amid cartoon flames (This Is Fine homage). Regenerated with softened prompt after v1 content-filter refusal."
     },
@@ -136,7 +237,14 @@
       "file": "memes/panic-button.png",
       "alpha": "memes/panic-button-alpha.png",
       "label": null,
-      "tags": ["two buttons", "panic", "decision", "sweat", "indecision", "meme"],
+      "tags": [
+        "two buttons",
+        "panic",
+        "decision",
+        "sweat",
+        "indecision",
+        "meme"
+      ],
       "loop": null,
       "note": "Sweating goblin hovering over two blank red buttons (two-buttons decision meme)."
     },
@@ -146,7 +254,14 @@
       "file": "backdrops/newsdesk-set.png",
       "alpha": null,
       "label": null,
-      "tags": ["studio", "newsdesk", "set", "broadcast", "background", "empty"],
+      "tags": [
+        "studio",
+        "newsdesk",
+        "set",
+        "broadcast",
+        "background",
+        "empty"
+      ],
       "loop": null,
       "note": "Empty broadcast studio set for compositing an anchor; 16:9 opaque."
     },
@@ -156,7 +271,14 @@
       "file": "backdrops/fed-facade.png",
       "alpha": null,
       "label": null,
-      "tags": ["fed", "building", "facade", "federal-reserve", "background", "establishing"],
+      "tags": [
+        "fed",
+        "building",
+        "facade",
+        "federal-reserve",
+        "background",
+        "establishing"
+      ],
       "loop": null,
       "note": "Federal Reserve neoclassical building facade; 16:9 opaque."
     },
@@ -166,7 +288,14 @@
       "file": "mascot/v2/anchor-desk.png",
       "alpha": null,
       "label": null,
-      "tags": ["mascot", "goblin", "host", "anchor", "desk", "hero"],
+      "tags": [
+        "mascot",
+        "goblin",
+        "host",
+        "anchor",
+        "desk",
+        "hero"
+      ],
       "loop": null,
       "note": "Hero host shot at the news desk with % mug; opaque white bg."
     },
@@ -176,7 +305,13 @@
       "file": "mascot/v2/standalone.png",
       "alpha": "mascot/v2/standalone-alpha.png",
       "label": null,
-      "tags": ["mascot", "goblin", "host", "standalone", "full-body"],
+      "tags": [
+        "mascot",
+        "goblin",
+        "host",
+        "standalone",
+        "full-body"
+      ],
       "loop": null,
       "note": "Full-body standalone goblin host; used as character reference for memes."
     },
@@ -186,7 +321,14 @@
       "file": "mascot/v2/deadpan.png",
       "alpha": "mascot/v2/deadpan-alpha.png",
       "label": null,
-      "tags": ["mascot", "goblin", "react", "deadpan", "neutral", "resting"],
+      "tags": [
+        "mascot",
+        "goblin",
+        "react",
+        "deadpan",
+        "neutral",
+        "resting"
+      ],
       "loop": null,
       "note": "Default resting expression."
     },
@@ -196,7 +338,14 @@
       "file": "mascot/v2/panic.png",
       "alpha": "mascot/v2/panic-alpha.png",
       "label": null,
-      "tags": ["mascot", "goblin", "react", "panic", "shock", "spike"],
+      "tags": [
+        "mascot",
+        "goblin",
+        "react",
+        "panic",
+        "shock",
+        "spike"
+      ],
       "loop": null,
       "note": "Eyes wide, sweat drop; odds spiking."
     },
@@ -206,7 +355,14 @@
       "file": "mascot/v2/smug.png",
       "alpha": "mascot/v2/smug-alpha.png",
       "label": null,
-      "tags": ["mascot", "goblin", "react", "smug", "smirk", "correct"],
+      "tags": [
+        "mascot",
+        "goblin",
+        "react",
+        "smug",
+        "smirk",
+        "correct"
+      ],
       "loop": null,
       "note": "Cocked brow and smirk; the market was right."
     },
@@ -216,9 +372,56 @@
       "file": "mascot/v2/coffee-sip.png",
       "alpha": "mascot/v2/coffee-sip-alpha.png",
       "label": null,
-      "tags": ["mascot", "goblin", "react", "coffee", "sip", "unbothered"],
+      "tags": [
+        "mascot",
+        "goblin",
+        "react",
+        "coffee",
+        "sip",
+        "unbothered"
+      ],
       "loop": null,
       "note": "Mid-sip, unbothered amid chaos."
+    },
+    {
+      "id": "veo-fed-storm",
+      "kind": "broll",
+      "file": "broll/veo-fed-storm.mp4",
+      "alpha": null,
+      "label": "FED / STORM",
+      "tags": [
+        "fed",
+        "storm",
+        "zoom",
+        "ominous",
+        "pixel",
+        "cutaway",
+        "broll"
+      ],
+      "loop": null,
+      "note": "Slow ominous zoom toward pixel-art Federal Reserve, gathering storm clouds + rain; 16-bit aesthetic. 1280x720 8s.",
+      "source": "veo-3.1-generate-preview (image-to-video, seed fed-facade.png)",
+      "license": "generated"
+    },
+    {
+      "id": "veo-printer",
+      "kind": "broll",
+      "file": "broll/veo-printer.mp4",
+      "alpha": null,
+      "label": "MONEY PRINTER",
+      "tags": [
+        "money",
+        "printer",
+        "cash",
+        "stimulus",
+        "pixel",
+        "cutaway",
+        "broll"
+      ],
+      "loop": null,
+      "note": "Pixel-art money printer furiously printing bills flying off-screen, side view, 16-bit retro. 1280x720 8s.",
+      "source": "veo-3.1-generate-preview (text-to-video)",
+      "license": "generated"
     }
   ]
 }
