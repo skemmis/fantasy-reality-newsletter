@@ -11,6 +11,8 @@ import {
   IntroStingStandalone,
   IntroStingStandaloneProps,
 } from './components/IntroSting';
+import {SHORT_FEDHIKE_DURATION, ShortFedHike, ShortFedHikeProps} from './ShortFedHike';
+import {ThumbFedHike, ThumbFedHikeProps} from './ThumbFedHike';
 
 const FPS = 30;
 
@@ -66,6 +68,26 @@ export const Root: React.FC = () => {
         defaultProps={
           {data: null, assets: null, crt: true, progressBar: true} satisfies EpisodeAssetsProps
         }
+        calculateMetadata={makeEpisodeAssetsMetadata('fedhike')}
+      />
+      <Composition
+        id="ShortFedHike"
+        component={ShortFedHike}
+        durationInFrames={SHORT_FEDHIKE_DURATION}
+        fps={FPS}
+        width={1080}
+        height={1920}
+        defaultProps={{data: null, assets: null} satisfies ShortFedHikeProps}
+        calculateMetadata={makeEpisodeAssetsMetadata('fedhike')}
+      />
+      <Composition
+        id="ThumbFedHike"
+        component={ThumbFedHike}
+        durationInFrames={1}
+        fps={FPS}
+        width={1280}
+        height={720}
+        defaultProps={{data: null, assets: null} satisfies ThumbFedHikeProps}
         calculateMetadata={makeEpisodeAssetsMetadata('fedhike')}
       />
       <Composition

@@ -2,6 +2,12 @@
 # Consumed by the Remotion composition (src/episodes/fedhike.tsx); timings
 # come from vo/words.json once VO exists (each beat starts at the start of
 # its first narration line). Durations below are pre-VO estimates in seconds.
+#
+# v4 collage recut (2026-07-12): beat ids + est unchanged from v3 so VO
+# wiring stays drop-in. The chart is a QUICK REFERENCE (fast tape + tariff
+# window + hourly zoom ~= 31.7s of 136s ~= 23%); everything else is desk
+# shots, headline slams, stat cards, gauges, memes and Veo b-roll.
+# CRTOverlay (0.55) + ProgressBar run across the whole episode.
 
 slug: fedhike
 title: "The market says: 51% the Fed HIKES this year"
@@ -11,59 +17,92 @@ vo: vo/words.json        # exported by scripts/vo_make_timeline.py
 music: null              # TODO: Epidemic Sound bed, drop in public/assets/music/
 scenes:
   - beat: cold-open
-    scene: MarketChartScene
+    scene: ColdOpenStorm
     est: 10
-    props: { revealUntil: end, showCounter: true, freeze: true, dim: true }
-    note: counter alone on dimmed card; "51%" huge; line hidden until the-tape
+    props: { broll: veo-fed-storm, pct: 51, chip: "RIGHT NOW ON KALSHI" }
+    note: full-frame storm b-roll under huge odds counter; VHSGlitch out
   - beat: title
-    scene: KineticTitle
+    scene: IntroSting + KineticTitle
     est: 3
-    props: { words: ["THE", "MARKET", "SAYS"], accent: magenta, kicker: "ep 01" }
+    props: { sting: 1.6, title: "THE FED... HIKES?", kicker: "EP 01 · FED HIKE WATCH" }
   - beat: setup
-    scene: MarketChartScene
+    scene: DeskShot
     est: 28
-    props: { revealUntil: 0.15, showCursor: true, showCounter: true }
+    props: { backdrop: newsdesk-set, sprite: mascot-talk, talk: true }
     overlays:
-      - { type: statCard, text: "HIKE by Dec 31 2026 — 51%" }
-      - { type: statCard, text: "CUT by Dec 31 2026 — 25%" }
+      - { type: liveChip, text: "LIVE · KALSHI WATCH" }
+      - { type: lowerThird, name: "Anchor Goblin", sub: "definitely a financial professional" }
+      - { type: punchChip, text: "$1.2M SAYS: COIN FLIP", at: 250 }
+      - { type: statCard, text: "HIKE by Dec 31 2026 — 51%", at: 330 }
+      - { type: statCard, text: "CUT by Dec 31 2026 — 25%", at: 430 }
+      - { type: tickerWipe, at: 550 }
+      - { type: hawkDoveMeter, from: 0.12, to: 0.67, label: "HIKE 2X AS LIKELY AS CUT", at: 558 }
   - beat: the-tape
     scene: MarketChartScene
     est: 14
-    props: { revealFrom: 0.0, revealUntil: 0.55, showCursor: true, showCounter: true }
+    props: { reveal: { fromFrame: 8, toFrame: 188 }, showCursor: true, showCounter: true, curve: step }
+    note: full tape drawn FAST (6s) with odometer ticks -> TickerWipe (f335)
+      -> ChapterCard "PART II - HOW WE GOT HERE" (f345)
   - beat: move-tariffs
     scene: MarketChartScene
     est: 12
-    props: { annotationsThrough: move-tariffs, revealUntil: "2025-05-01" }
+    props: { zoom: { start: "2025-03-22", end: "2025-05-20" }, reveal: "2025-05-15" }
+    overlays:
+      - { type: propPop, asset: tariff-crate, label: TARIFFS, at: 34 }
+      - { type: memeCutaway, asset: mascot-crying, caption: "prices say HIKE. growth says CUT.", at: 150 }
+      - { type: punchChip, text: "THE MARKET CHOSE: YES", at: 264 }
   - beat: move-jobs
-    scene: MarketChartScene
+    scene: ArticleZoom
     est: 10
-    props: { annotationsThrough: move-jobs, revealUntil: "2026-06-08" }
+    props: { src: assets/headlines/jobs-cnbc.png, highlight: "172,000", zoomAt: 78 }
+    overlays:
+      - { type: bigNumber, value: "+172K", sub: "Consensus: +80K", at: 150 }
+      - { type: compareBars, rows: ["May +172K", "Consensus +80K", "Apr +139K"], at: 228 }
   - beat: move-fomc
-    scene: MarketChartScene
+    scene: HeadlineCard
     est: 12
-    props: { annotationsThrough: move-fomc, revealUntil: "2026-06-20" }
+    props: { src: assets/headlines/fomc-cnbc.png, highlight: "remove cutting bias" }
+    overlays:
+      - { type: dotPlot, highlight: "2026 >= 3.875", label: "9 of 18 see a hike", at: 105 }
+      - { type: breakingBanner, text: "BREAKING — DOTS FLIP HAWKISH", at: 185 }
+      - { type: versusCard, left: WARSH, right: POWELL, at: 255 }
   - beat: meme-react
     scene: MemeCutaway
     est: 3
-    props: { meme_intent: "nervous sweating / this is fine", asset: null } # resolver TODO
+    props: { meme_intent: "nervous sweating / this is fine", caption: "live look at the bond market" }
   - beat: zoom
     scene: MarketChartScene
     est: 12
     props:
-      window: { start: "2026-05-15", end: "2026-07-11" }  # or swap to fedhike-closeup 1h data
+      window: { start: "2026-05-15", end: "2026-07-11" }   # hourly close-up
       revealUntil: 1.0
       showCursor: true
       showCounter: true
+    overlays:
+      - { type: fireBorder, at: 100 }
   - beat: so-what
-    scene: MarketChartScene
+    scene: MoneyPrinterBeat + DeskShot
     est: 20
-    props: { revealUntil: 1.0, freeze: true }
+    props: { broll: veo-printer, coinRain: true, caption: "WHAT THE FUTURE COSTS", calmDeskAt: 264 }
+    overlays:
+      - { type: propPop, asset: rate-dial, at: 324 }
+      - { type: propPop, asset: cpi-flame, at: 404 }
+      - { type: punchChip, text: "THE FED'S JOB IS TO BE BORING.", at: 514 }
   - beat: endcard
     scene: EndCard
     est: 12
     props:
       rows:
         - { ticker: FEDHIKE-26DEC31, label: "Fed hike by Dec 31, 2026", covered: "51%", status: OPEN }
+      powellWaveAt: 90
+cuts:
+  # Vertical Shorts cut (src/ShortFedHike.tsx, 1080x1920@30, ~45s):
+  # storm cold-open (8s) -> +172K BigNumber (7s) -> DotPlot highlight (9s)
+  # -> HawkDoveMeter (8s) -> this-is-fine (5s) -> end slate 51% (8s).
+  short: { comp: ShortFedHike, out: out/short-fedhike.mp4 }
+  # Thumbnail still (src/ThumbFedHike.tsx, 1280x720): giant 51%, panic
+  # goblin, tape sliver, "THE FED... HIKES?" strip.
+  thumb: { comp: ThumbFedHike, out: out/thumb-fedhike.png }
 intro_cam:              # optional human cold-open (Sam on camera) — slots before cold-open
   enabled: false
   src: null             # drop a clip at public/episodes/fedhike/intro.mp4 and set enabled
