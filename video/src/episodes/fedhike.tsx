@@ -499,7 +499,9 @@ export const FedHikeEpisode: React.FC<{
       {bugWindows.map(([from, to]) => (
         <Sequence key={from} from={from} durationInFrames={to - from} name={`Network bug ${from}`}>
           <AbsoluteFill style={{pointerEvents: 'none'}}>
-            <div style={{position: 'absolute', right: 30, bottom: 26, opacity: 0.9}}>
+            {/* Sits above the footer band (pad 81 + footer 54 = 135px from
+                the bottom at 1080p) so it never crowds the disclaimer. */}
+            <div style={{position: 'absolute', right: 34, bottom: 148, opacity: 0.72}}>
               <SpriteLoop
                 asset={goblinBug}
                 fallbackSrc="assets/mascot/v2/deadpan-alpha.png"
