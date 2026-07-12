@@ -5,20 +5,19 @@
 #
 # RETRO episode (the fall-2025 shutdown, scored after the fact).
 #
-# DATA CAVEAT: "The Tape" (MarketChartScene) needs data.json/markets[], which
-# the Kalshi API does not return for any shutdown market in this environment
-# (see data.json meta.note). This cut therefore runs CHART-LIGHT and leans
-# entirely on the NEW grammar — stat slams, headline cards, a compare-bars
-# "who called it" beat and memes carry every beat. The one chart moment
-# ([beat:the-bet] insert) is marked pending and stays dark until the exporter
-# populates the tape (commands in data.json meta.target_markets). No prices
-# were invented. When data lands, add explicit [beat:the-tape]/[beat:zoom]
-# MarketChartScene beats and this stays under the 35% chart cap easily.
+# DATA NOTE: "The Tape" recovered from the Kalshi /historical store — the
+# settled market KXGOVSHUTLENGTH-26JAN01-40D ("More than 40 days"), a 39-day
+# daily tape (Oct 4 -> Nov 11 2025: opens ~11%, Nov 5 = 72.5%, Nov 6 jumps
+# +18 to 90.5%, ends ~99%). This cut still leans on the NEW grammar — stat
+# slams, headline cards, a compare-bars "who called it" beat and memes — with
+# one live chart moment ([beat:the-bet] insert). No prices were invented; the
+# chart stays well under the 35% chart cap. Room to add explicit
+# [beat:the-tape]/[beat:zoom] MarketChartScene beats later if desired.
 
 slug: shutdown
 title: "The market says: it lasted 43 days — and the crowd called it"
 format: { width: 1920, height: 1080, fps: 30 }
-data: data.json          # markets[] empty in this env — see meta.note
+data: data.json          # KXGOVSHUTLENGTH-26JAN01-40D tape via /historical
 vo: vo/words.json        # exported by scripts/vo_make_timeline.py
 music: null              # TODO: Epidemic Sound bed, drop in public/assets/music/
 scenes:
@@ -75,10 +74,9 @@ scenes:
           width: 980
           tilt: 2
     inserts:
-      # PENDING: lights up once data.json/markets[] is populated (see meta.note).
-      - { type: MarketChartScene, at: 4, dur: 5, status: pending_data,
-          props: { annotationsThrough: record, showCounter: true },
-          fallback: keep-comparebars }
+      # The tape (data.json/markets[]) is now populated — insert lights up.
+      - { type: MarketChartScene, at: 4, dur: 5,
+          props: { annotationsThrough: record, revealUntil: "2025-11-06", showCursor: true, showCounter: true } }
 
   - beat: move-begins
     scene: BigNumber                  # the human stakes on day one
