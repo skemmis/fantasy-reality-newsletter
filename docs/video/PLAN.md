@@ -57,6 +57,21 @@ channels, and clip farms. Polished + funny + real dataviz is unclaimed.
 
 ---
 
+## 1.5 Production workflow (decided 2026-07-12, Oliver-style)
+
+Per episode, in order — each step gates the next:
+1. **Research doc** (Claude): `episodes/<slug>/research.md` — what actually
+   happened, every claim dated + sourced, key numbers, timeline of market
+   moves with verified causes, upcoming catalysts, and a neutral beat-sheet
+   skeleton with visual suggestions. NO jokes, NO voice.
+2. **Script** (Sam): fills the research into `script.md` — voice, jokes,
+   pacing. The research doc's facts are the only facts allowed in.
+3. **VO** (Sam): records narration (and optional on-camera cold open),
+   drops audio in `episodes/<slug>/vo/`; Claude aligns it to word timings.
+4. **Elements** (Claude): builds/renders every visual element against the
+   VO timeline; delivers an element reel for Sam's FEEDBACK before assembly.
+5. **Episode** (Claude): assembles, renders, delivers final cut.
+
 ## 2. Architecture: script + market data in → video out
 
 The pipeline extends what the repo already does (story JSON → styled chart
