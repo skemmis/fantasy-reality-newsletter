@@ -118,8 +118,9 @@ export const ShotReel2: React.FC<ShotReel2Props> = ({data, assets = null}) => {
   // ---- optional art (all null-safe; components fall back to placeholders) ----
   const banner = resolveAsset(assets, 'breaking-banner');
   const siren = resolveAsset(assets, 'siren', 'loop') ?? resolveAsset(assets, 'siren-loop');
-  const hawk = resolveAsset(assets, 'hawk');
-  const dove = resolveAsset(assets, 'dove');
+  // Prefer the 2-frame flap loops; fall back to the static birds.
+  const hawk = resolveAsset(assets, 'hawk-flap') ?? resolveAsset(assets, 'hawk');
+  const dove = resolveAsset(assets, 'dove-flap') ?? resolveAsset(assets, 'dove');
   const coin =
     resolveAsset(assets, 'confetti-coin', 'loop') ??
     resolveAsset(assets, 'coin-loop', 'loop') ??

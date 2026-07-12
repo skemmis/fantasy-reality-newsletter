@@ -60,7 +60,7 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({
         <span
           style={{
             fontFamily: PIXEL_FAMILY,
-            fontSize: 190,
+            fontSize: 230,
             color: COLORS.gold,
             textShadow: `12px 12px 0 rgba(255, 195, 122, 0.22)`,
             scale: String(2 - numS),
@@ -87,7 +87,7 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({
           <span
             style={{
               fontFamily: PIXEL_FAMILY,
-              fontSize: 74,
+              fontSize: 86,
               color: COLORS.card,
               textShadow: `8px 8px 0 ${inkAlpha(0.9)}`,
               translate: `${((1 - titleS) * 70).toFixed(1)}px 0px`,

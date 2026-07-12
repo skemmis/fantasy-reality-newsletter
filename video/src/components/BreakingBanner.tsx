@@ -163,52 +163,65 @@ export const BreakingBanner: React.FC<BreakingBannerProps> = ({
           {/* hazard stripes above + below the ribbon */}
           <div style={{...hazard(false), top: -stripeH - 10}} />
           <div style={{...hazard(true), top: bandH + 10}} />
-          {/* the ribbon */}
-          <div
-            style={{
-              position: 'relative',
-              height: bandH,
-              background: COLORS.red,
-              borderTop: pixelBorder(6),
-              borderBottom: pixelBorder(6),
-              boxShadow: `0 14px 0 ${inkAlpha(0.3)}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-            }}
-          >
-            {banner ? (
+          {/* the ribbon: art cutout when the manifest has it, typeset else */}
+          {banner ? (
+            <div
+              style={{
+                position: 'relative',
+                height: bandH,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Img
-                src={assetSrc(banner.file)}
-                style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                src={assetSrc(banner.alpha ?? banner.file)}
+                style={{
+                  height: bandH * 1.62,
+                  width: 'auto',
+                  objectFit: 'contain',
+                  filter: `drop-shadow(0 14px 0 ${inkAlpha(0.3)})`,
+                }}
               />
-            ) : (
-              <>
-                {/* subtle darker inner band for depth */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 10,
-                    border: `4px solid ${inkAlpha(0.28)}`,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: PIXEL_FAMILY,
-                    fontSize: bandH * 0.42,
-                    letterSpacing: '0.08em',
-                    color: '#ffffff',
-                    textShadow: `8px 8px 0 ${inkAlpha(0.85)}`,
-                    // 2-frame hard blink on the text while the alarm runs.
-                    opacity: frame < 40 && Math.floor(frame / 3) % 4 === 3 ? 0.55 : 1,
-                  }}
-                >
-                  {text.toUpperCase()}
-                </span>
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                position: 'relative',
+                height: bandH,
+                background: COLORS.red,
+                borderTop: pixelBorder(6),
+                borderBottom: pixelBorder(6),
+                boxShadow: `0 14px 0 ${inkAlpha(0.3)}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              {/* subtle darker inner band for depth */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 10,
+                  border: `4px solid ${inkAlpha(0.28)}`,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: PIXEL_FAMILY,
+                  fontSize: bandH * 0.42,
+                  letterSpacing: '0.08em',
+                  color: '#ffffff',
+                  textShadow: `8px 8px 0 ${inkAlpha(0.85)}`,
+                  // 2-frame hard blink on the text while the alarm runs.
+                  opacity: frame < 40 && Math.floor(frame / 3) % 4 === 3 ? 0.55 : 1,
+                }}
+              >
+                {text.toUpperCase()}
+              </span>
+            </div>
+          )}
           {/* sirens at both ends, over the ribbon */}
           <div style={{position: 'absolute', left: width * 0.025, top: bandH / 2 - sirenSize / 2}}>
             {siren ? (

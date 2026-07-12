@@ -53,7 +53,8 @@ export const IntroSting: React.FC<IntroStingProps> = ({goblin = null, coin = nul
     extrapolateRight: 'clamp',
   });
   const coinX = -180 + coinT * (width + 360);
-  const coinY = height * 0.42 - Math.sin(coinT * Math.PI) * height * 0.16;
+  // Lane between the wordmark and the goblin so it never crosses type.
+  const coinY = height * 0.68 - Math.sin(coinT * Math.PI) * height * 0.1;
   const coinFrames = coin?.loop && coin.loop.length > 0 ? coin.loop : null;
   const coinStep = Math.floor((frame * 12) / fps);
   const coinSize = 130;
