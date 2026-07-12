@@ -1,6 +1,9 @@
 import React, {useMemo} from 'react';
 import {
   AbsoluteFill,
+  Img,
+  Loop,
+  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
@@ -22,35 +25,46 @@ import {OddsCounter} from '../components/OddsCounter';
 import {VersusCard} from '../components/VersusCard';
 import {PropPop} from '../components/PropPop';
 import {SpriteLoop} from '../components/SpriteLoop';
-import {AssetManifest, resolveAsset, resolveMeme} from '../assets';
-import {annotationFracs, buildBeatReveal} from '../reveal';
+import {HeadlineCard} from '../components/HeadlineCard';
+import {ArticleZoom} from '../components/ArticleZoom';
+import {BigNumber} from '../components/BigNumber';
+import {CompareBars} from '../components/CompareBars';
+import {DotPlot, DotPlotColumn} from '../components/DotPlot';
+import {TickerWipe} from '../components/TickerWipe';
+import {BreakingBanner} from '../components/BreakingBanner';
+import {HawkDoveMeter} from '../components/HawkDoveMeter';
+import {MoneyPrinterBeat} from '../components/MoneyPrinterBeat';
+import {ChapterCard} from '../components/ChapterCard';
+import {IntroSting} from '../components/IntroSting';
+import {AssetEntry, AssetManifest, assetSrc, resolveAsset, resolveMeme} from '../assets';
 import {CRTOverlay} from '../fx/CRTOverlay';
+import {VHSGlitch} from '../fx/VHSGlitch';
+import {FireBorder} from '../fx/FireBorder';
 import {ProgressBar} from '../fx/ProgressBar';
+import {useScreenShake} from '../fx/useScreenShake';
 
 const FPS = 30;
 
 /**
- * BEATS mirrors public/episodes/fedhike/episode.yaml (scene order + `est`
- * second estimates). NOTE: these timings are pre-VO estimates — once
- * vo/words.json exists, derive each beat's start from the start of its
- * first narration line and feed the real WordsTimeline into CaptionLayer.
- *
- * `cut` marks a hard scene cut (2-frame white flash + thud). The four
- * chart move-beats run as ONE continuous MarketChartScene so the line
- * draws through them without resets; their ids are kept for bookkeeping.
+ * Collage recut (v4). BEATS mirrors public/episodes/fedhike/episode.yaml
+ * (ids + `est` second estimates are unchanged so the VO wiring stays
+ * drop-in). The chart is now a QUICK REFERENCE — three appearances
+ * (fast tape ~11.5s, tariff window ~8.2s, hourly zoom 12s ≈ 32s of 136s);
+ * everything else is desk shots, headline slams, stat cards, gauges,
+ * memes and Veo b-roll.
  */
 export const BEATS = [
-  {id: 'cold-open', est: 10, cut: false},
-  {id: 'title', est: 3, cut: true},
-  {id: 'setup', est: 28, cut: true},
-  {id: 'the-tape', est: 14, cut: true},
-  {id: 'move-tariffs', est: 12, cut: false},
-  {id: 'move-jobs', est: 10, cut: false},
-  {id: 'move-fomc', est: 12, cut: false},
-  {id: 'meme-react', est: 3, cut: true},
-  {id: 'zoom', est: 12, cut: true},
-  {id: 'so-what', est: 20, cut: true},
-  {id: 'endcard', est: 12, cut: true},
+  {id: 'cold-open', est: 10},
+  {id: 'title', est: 3},
+  {id: 'setup', est: 28},
+  {id: 'the-tape', est: 14},
+  {id: 'move-tariffs', est: 12},
+  {id: 'move-jobs', est: 10},
+  {id: 'move-fomc', est: 12},
+  {id: 'meme-react', est: 3},
+  {id: 'zoom', est: 12},
+  {id: 'so-what', est: 20},
+  {id: 'endcard', est: 12},
 ] as const;
 
 type BeatId = (typeof BEATS)[number]['id'];
@@ -68,13 +82,12 @@ const beatFrames = (id: BeatId): number =>
 
 export const FEDHIKE_DURATION = BEATS.reduce((a, b) => a + b.est * FPS, 0);
 
-// The tape block: the-tape + the three move beats, one continuous scene.
-const TAPE_START = beatStart('the-tape');
-const TAPE_FRAMES =
-  beatFrames('the-tape') +
-  beatFrames('move-tariffs') +
-  beatFrames('move-jobs') +
-  beatFrames('move-fomc');
+/**
+ * The episode's headline number, as narrated ("Fifty-one percent.") and in
+ * the title. NOTE: data.json's last daily close is 55 — re-export data.json
+ * and re-verify this constant the day VO is recorded (script.md TODO).
+ */
+export const HEADLINE_PCT = 51;
 
 const sfx = (name: string) => staticFile(`assets/sfx/${name}.wav`);
 
@@ -94,15 +107,17 @@ const valueAt = (market: Market, tms: number, times: number[]): number => {
   return pts[lo].p + f * (pts[hi].p - pts[lo].p);
 };
 
-/** 2-frame hard white flash + thud at a cut point. */
-const CutFlash: React.FC<{at: number}> = ({at}) => (
+/** 2-frame hard white flash (+ optional thud) at a cut point. */
+const CutFlash: React.FC<{at: number; thud?: boolean}> = ({at, thud = true}) => (
   <>
     <Sequence from={at} durationInFrames={2} name="Cut flash">
       <AbsoluteFill style={{background: '#ffffff'}} />
     </Sequence>
-    <Sequence from={at} durationInFrames={14} name="Cut thud" layout="none">
-      <Audio src={sfx('thud')} volume={0.45} />
-    </Sequence>
+    {thud ? (
+      <Sequence from={at} durationInFrames={14} name="Cut thud" layout="none">
+        <Audio src={sfx('thud')} volume={0.45} />
+      </Sequence>
+    ) : null}
   </>
 );
 
@@ -129,7 +144,7 @@ const StatCard: React.FC<{
         alignItems: 'stretch',
         background: COLORS.cream,
         border: pixelBorder(4),
-        boxShadow: hardShadow(inkAlpha(0.25), 1.4),
+        boxShadow: hardShadow(inkAlpha(0.3), 1.4),
         scale: String(0.7 + 0.3 * s),
         opacity: s,
       }}
@@ -151,9 +166,9 @@ const StatCard: React.FC<{
         style={{
           fontFamily: MONO_FAMILY,
           fontWeight: 700,
-          fontSize: 30,
+          fontSize: 28,
           color: COLORS.ink,
-          padding: '20px 26px',
+          padding: '20px 24px',
           display: 'flex',
           alignItems: 'center',
           letterSpacing: '0.02em',
@@ -165,56 +180,101 @@ const StatCard: React.FC<{
   );
 };
 
-/** Cold open: dimmed chart card, line hidden, huge odometer with the last price. */
-const ColdOpen: React.FC<{data: EpisodeData; lastPrice: number}> = ({data, lastPrice}) => {
+/* ------------------------------------------------------------------ */
+/* Cold open: Veo fed-storm full-frame under the huge odds counter.    */
+/* Exported for the Shorts cut (portrait-aware).                       */
+/* ------------------------------------------------------------------ */
+
+export const ColdOpenStorm: React.FC<{
+  storm: AssetEntry | null;
+  pct: number;
+  question?: string;
+}> = ({storm, pct, question = 'ODDS THE FED HIKES BY DEC 31, 2026'}) => {
   const frame = useCurrentFrame();
-  const rolled = interpolate(frame, [8, 64], [Math.max(0, lastPrice - 28), lastPrice], {
+  const {fps, width, height} = useVideoConfig();
+  const portrait = height > width;
+
+  const rolled = interpolate(frame, [10, 68], [Math.max(0, pct - 28), pct], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.bezier(0.16, 1, 0.3, 1),
   });
+  const panelS = spring({
+    frame: frame - 6,
+    fps,
+    config: {damping: 13, stiffness: 260, mass: 0.8},
+    durationInFrames: 12,
+  });
+
   return (
-    <AbsoluteFill>
-      <MarketChartScene
-        data={data}
-        reveal={0}
-        showCursor={false}
-        showCounter={false}
-        showAnnotations={false}
-        curve="step"
-      />
-      {/* dim the card; the counter is the only thing alive */}
-      <AbsoluteFill style={{background: 'rgba(233, 229, 221, 0.62)'}} />
-      <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', gap: 44}}>
+    <AbsoluteFill style={{background: COLORS.ink}}>
+      {storm ? (
+        <Loop durationInFrames={239} name="Storm broll loop">
+          <OffthreadVideo
+            src={assetSrc(storm.file)}
+            style={{width: '100%', height: '100%', objectFit: 'cover'}}
+            muted
+          />
+        </Loop>
+      ) : (
+        <AbsoluteFill style={{background: COLORS.ink}} />
+      )}
+      {/* ink wash + house frame for contrast */}
+      <AbsoluteFill style={{background: inkAlpha(0.34)}} />
+      <AbsoluteFill style={{border: `12px solid ${COLORS.ink}`, pointerEvents: 'none'}} />
+
+      <AbsoluteFill
+        style={{justifyContent: 'center', alignItems: 'center', gap: portrait ? 54 : 44}}
+      >
         <div
           style={{
             fontFamily: MONO_FAMILY,
             fontWeight: 700,
-            fontSize: 30,
+            fontSize: portrait ? 28 : 30,
             letterSpacing: '0.32em',
-            color: COLORS.mutedText,
+            color: COLORS.ink,
+            background: COLORS.cream,
+            border: pixelBorder(3),
+            boxShadow: hardShadow(inkAlpha(0.4)),
+            padding: '10px 26px 10px 32px',
           }}
         >
           RIGHT NOW ON KALSHI
         </div>
-        <OddsCounter value={rolled} size={230} color={COLORS.ink} />
+        {/* the counter panel */}
+        <div
+          style={{
+            background: COLORS.card,
+            border: pixelBorder(6),
+            boxShadow: hardShadow(inkAlpha(0.55), 2),
+            padding: portrait ? '30px 44px' : '26px 60px',
+            scale: String(0.7 + 0.3 * panelS),
+            opacity: Math.min(1, panelS * 2.5),
+          }}
+        >
+          <OddsCounter value={rolled} size={portrait ? 190 : 220} color={COLORS.ink} />
+        </div>
         <div
           style={{
             fontFamily: PIXEL_FAMILY,
-            fontSize: 30,
+            fontSize: portrait ? 26 : 30,
             lineHeight: 1.7,
             color: COLORS.ink,
             background: COLORS.gold,
             border: pixelBorder(4),
-            boxShadow: hardShadow(inkAlpha(0.25), 1.2),
+            boxShadow: hardShadow(inkAlpha(0.45), 1.2),
             padding: '18px 30px',
-            maxWidth: '72%',
+            maxWidth: '80%',
             textAlign: 'center',
           }}
         >
-          ODDS THE FED HIKES BY DEC 31, 2026
+          {question}
         </div>
       </AbsoluteFill>
+      {/* SFX: slam + roll ticks */}
+      <Sequence from={6} durationInFrames={14} name="Panel thud" layout="none">
+        <Audio src={sfx('thud')} volume={0.5} />
+      </Sequence>
       {[20, 34, 48].map((f) => (
         <Sequence key={f} from={f} durationInFrames={8} name={`Roll tick ${f}`} layout="none">
           <Audio src={sfx('tick')} volume={0.3} />
@@ -224,30 +284,283 @@ const ColdOpen: React.FC<{data: EpisodeData; lastPrice: number}> = ({data, lastP
   );
 };
 
-/** So-what: full tape, frozen, with a slow ken-burns-ish drift. */
-const SoWhat: React.FC<{data: EpisodeData}> = ({data}) => {
-  const frame = useCurrentFrame();
-  const {durationInFrames} = useVideoConfig();
+/* ------------------------------------------------------------------ */
+/* News desk: backdrop + goblin composited BEHIND the desk (a slice    */
+/* of the backdrop is re-drawn over the sprite's lower body).          */
+/* ------------------------------------------------------------------ */
+
+const DESK_SLICE_TOP = 0.585; // fraction of frame height where the desk re-draw starts
+
+const DeskShot: React.FC<{
+  backdrop: AssetEntry | null;
+  /** Talking-head loop entry (talk beat) or a static mascot entry. */
+  sprite: AssetEntry | null;
+  /** Cycle the sprite's loop frames (anchor talking) vs hold frame 1. */
+  talk?: boolean;
+  spriteSize?: number;
+  spriteTop?: number;
+  children?: React.ReactNode;
+}> = ({backdrop, sprite, talk = true, spriteSize = 640, spriteTop = 175, children}) => {
+  const {width, height} = useVideoConfig();
+  const bg = backdrop ? assetSrc(backdrop.file) : null;
+  const sliceTop = Math.round(DESK_SLICE_TOP * height);
+  const staticSprite =
+    sprite && !talk ? (
+      <Img
+        src={assetSrc(sprite.alpha ?? sprite.file)}
+        style={{width: spriteSize, height: spriteSize, objectFit: 'contain'}}
+      />
+    ) : (
+      <SpriteLoop asset={sprite} fps={6} size={spriteSize} />
+    );
   return (
-    <AbsoluteFill style={{overflow: 'hidden', background: COLORS.canvas}}>
-      <AbsoluteFill
+    <AbsoluteFill style={{background: COLORS.canvas}}>
+      {bg ? (
+        <Img src={bg} style={{width, height, objectFit: 'fill'}} />
+      ) : (
+        <AbsoluteFill style={{background: COLORS.cream}} />
+      )}
+      {/* the anchor, seated behind the desk */}
+      <div style={{position: 'absolute', left: '50%', top: spriteTop, translate: '-50% 0'}}>
+        {staticSprite}
+      </div>
+      {/* re-draw the desk over the sprite's lower body */}
+      {bg ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: sliceTop,
+            bottom: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <Img
+            src={bg}
+            style={{position: 'absolute', left: 0, top: -sliceTop, width, height, objectFit: 'fill'}}
+          />
+        </div>
+      ) : null}
+      {children}
+    </AbsoluteFill>
+  );
+};
+
+/** Blinking LIVE chip, top-left. */
+const LiveChip: React.FC = () => {
+  const frame = useCurrentFrame();
+  const on = Math.floor(frame / 8) % 2 === 0;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 44,
+        left: 48,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        background: COLORS.cream,
+        border: pixelBorder(3),
+        boxShadow: hardShadow(inkAlpha(0.3)),
+        padding: '10px 18px',
+      }}
+    >
+      <div style={{width: 18, height: 18, background: on ? COLORS.red : inkAlpha(0.25)}} />
+      <span
         style={{
-          scale: String(interpolate(frame, [0, durationInFrames], [1.02, 1.09])),
-          translate: `${interpolate(frame, [0, durationInFrames], [10, -26])}px ${interpolate(frame, [0, durationInFrames], [6, -14])}px`,
+          fontFamily: MONO_FAMILY,
+          fontWeight: 700,
+          fontSize: 24,
+          letterSpacing: '0.18em',
+          color: COLORS.ink,
         }}
       >
+        LIVE · KALSHI WATCH
+      </span>
+    </div>
+  );
+};
+
+/** Broadcast lower-third: name plate + snark line. */
+const LowerThird: React.FC<{name: string; sub: string; appearFrame?: number}> = ({
+  name,
+  sub,
+  appearFrame = 0,
+}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  if (frame < appearFrame) return null;
+  const s = spring({
+    frame: frame - appearFrame,
+    fps,
+    config: {damping: 13, stiffness: 240, mass: 0.7},
+    durationInFrames: 12,
+  });
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 64,
+        bottom: 96,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        translate: `${(1 - s) * -60}px 0px`,
+        opacity: Math.min(1, s * 2),
+      }}
+    >
+      <div
+        style={{
+          fontFamily: PIXEL_FAMILY,
+          fontSize: 34,
+          color: COLORS.ink,
+          background: COLORS.gold,
+          border: pixelBorder(4),
+          boxShadow: hardShadow(inkAlpha(0.3)),
+          padding: '14px 24px',
+        }}
+      >
+        {name.toUpperCase()}
+      </div>
+      <div
+        style={{
+          fontFamily: MONO_FAMILY,
+          fontWeight: 700,
+          fontSize: 23,
+          letterSpacing: '0.05em',
+          color: COLORS.ink,
+          background: COLORS.cream,
+          border: pixelBorder(3),
+          boxShadow: hardShadow(inkAlpha(0.25)),
+          padding: '8px 18px',
+          marginTop: -4,
+          marginLeft: 18,
+        }}
+      >
+        {sub.toUpperCase()}
+      </div>
+    </div>
+  );
+};
+
+/** Gold statement chip that slams in (used on chart + calm-desk shots). */
+const PunchChip: React.FC<{
+  text: string;
+  appearFrame?: number;
+  x?: string;
+  y?: string;
+  rotate?: number;
+  fontSize?: number;
+}> = ({text, appearFrame = 0, x = '50%', y = '78%', rotate = -2, fontSize = 34}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  if (frame < appearFrame) return null;
+  const s = spring({
+    frame: frame - appearFrame,
+    fps,
+    config: {damping: 11, stiffness: 300, mass: 0.7},
+    durationInFrames: 12,
+  });
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        transform: `translate(-50%, -50%) scale(${1.5 - 0.5 * s}) rotate(${rotate}deg)`,
+        opacity: Math.min(1, s * 2.5),
+        fontFamily: PIXEL_FAMILY,
+        fontSize,
+        lineHeight: 1.6,
+        color: COLORS.ink,
+        background: COLORS.gold,
+        border: pixelBorder(5),
+        boxShadow: hardShadow(inkAlpha(0.3), 1.2),
+        padding: '18px 28px',
+        textAlign: 'center',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {text.toUpperCase()}
+    </div>
+  );
+};
+
+/** Zoom beat: hourly close-up dive + FireBorder as the line rips upward. */
+const ZoomScene: React.FC<{
+  data: EpisodeData;
+  flame: AssetEntry | null;
+}> = ({data, flame}) => {
+  const FIRE_AT = 100;
+  const shake = useScreenShake(FIRE_AT, {amp: 9, rotAmp: 0.8, durationInFrames: 16, seed: 'zoomfire'});
+  return (
+    <AbsoluteFill style={{background: COLORS.canvas}}>
+      <AbsoluteFill style={{translate: shake.translate, rotate: shake.rotate}}>
         <MarketChartScene
           data={data}
           reveal={1}
+          zoom={{
+            window: {start: '2026-05-15T00:00:00Z', end: '2026-07-11T23:00:00Z'},
+            atFrame: 12,
+            durationInFrames: 70,
+          }}
           showCursor
           showCounter
           showAnnotations
           curve="step"
         />
       </AbsoluteFill>
+      <FireBorder flame={flame} appearFrame={FIRE_AT} glow={0.75} seed="zoom-fire" />
+      <Sequence from={12} durationInFrames={30} name="Zoom whoosh" layout="none">
+        <Audio src={sfx('whoosh-up')} volume={0.45} />
+      </Sequence>
+      <Sequence from={FIRE_AT} durationInFrames={22} name="Fire alarm" layout="none">
+        <Audio src={sfx('alarm')} volume={0.3} />
+      </Sequence>
     </AbsoluteFill>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/* Shared shot data                                                    */
+/* ------------------------------------------------------------------ */
+
+const TICKER_TAPE =
+  'FEDHIKE-26DEC31 ▲51 · KXRATECUT-26 ▼25 · PAYROLLS +172K · CPI 4.1% · 10Y 4.42%';
+
+export const JOBS_HEADLINE = {
+  src: 'assets/headlines/jobs-cnbc.png',
+  source: 'CNBC',
+  date: 'JUN 5 2026',
+  headline: 'U.S. payrolls rose by 172,000 in May, much more than expected',
+  url: 'https://www.cnbc.com/2026/06/05/jobs-report-may-2026.html',
+  aspect: 2880 / 1400,
+  // Box over "172,000" — measured on the real 2880x1400 grab.
+  highlight: {x: 0.482, y: 0.405, w: 0.155, h: 0.1},
+};
+
+export const FOMC_HEADLINE = {
+  src: 'assets/headlines/fomc-cnbc.png',
+  source: 'CNBC',
+  date: 'JUN 17 2026',
+  headline: 'Fed holds rates steady, pares down statement to remove cutting bias',
+  url: 'https://www.cnbc.com/2026/06/17/fed-interest-rate-decision-june-2026.html',
+  aspect: 2880 / 1400,
+  // Box over "remove cutting bias".
+  highlight: {x: 0.345, y: 0.49, w: 0.36, h: 0.09},
+};
+
+/** June 2026 SEP recreation; 9 of 18 at/above 3.875 in 2026 = the hike camp. */
+export const DOT_COLUMNS: DotPlotColumn[] = [
+  {label: '2026', dots: [3.375, ...Array(8).fill(3.625), ...Array(6).fill(3.875), 4.125, 4.125, 4.375]},
+  {label: '2027', dots: [3.125, 3.125, ...Array(4).fill(3.375), ...Array(5).fill(3.625), ...Array(4).fill(3.875), 4.125, 4.125, 4.375]},
+  {label: 'LONGER RUN', dots: [...Array(3).fill(2.875), ...Array(9).fill(3.125), ...Array(4).fill(3.375), 3.625, 3.625]},
+];
+
+/* ------------------------------------------------------------------ */
+/* The episode                                                         */
+/* ------------------------------------------------------------------ */
 
 export const FedHikeEpisode: React.FC<{
   data: EpisodeData | null;
@@ -255,104 +568,132 @@ export const FedHikeEpisode: React.FC<{
   assets?: AssetManifest | null;
   /** Opt-in retro screen treatment (scanlines/vignette/tears). */
   crt?: boolean;
-  /** Opt-in pixel progress bar above the footer. */
+  /** Opt-in pixel progress bar along the bottom edge. */
   progressBar?: boolean;
 }> = ({data, assets = null, crt = false, progressBar = false}) => {
   const episode = data ?? sampleEpisode();
   const market = episode.markets[0];
-  const last = market.points[market.points.length - 1];
   const times = useMemo(() => market.points.map((pt) => Date.parse(pt.t)), [market]);
   const tMin = times[0];
   const tMax = times[times.length - 1];
 
-  // ---- the tape block's beat-paced reveal plan (also drives SFX cues) ----
-  const fomcEnd = (Date.parse('2026-06-20T00:00:00Z') - tMin) / (tMax - tMin);
-  const revealTo = Math.min(1, Math.max(0.3, fomcEnd));
-  const tapeSpec = {
-    beats: true as const,
-    startFrame: 10,
-    // ~4 annotation holds of 3s each; the rest is drawing time.
-    drawFrames: TAPE_FRAMES - 10 - 4 * 90 - 60,
-    holdFrames: 90,
-    to: revealTo,
-  };
-  const tapePlan = useMemo(
-    () =>
-      buildBeatReveal(
-        annotationFracs(
-          episode.annotations
-            .filter((a) => !a.market || a.market === market.ticker)
-            .map((a) => a.t),
-          tMin,
-          tMax,
-        ),
-        tapeSpec,
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [episode, market.ticker, tMin, tMax],
-  );
+  // ---- art assets (all null-safe; components fall back to placeholders) ----
+  const storm = resolveAsset(assets, 'veo-fed-storm');
+  const newsdesk = resolveAsset(assets, 'newsdesk-set', 'backdrop');
+  const talkLoop = resolveAsset(assets, 'mascot-talk');
+  const deadpan = resolveAsset(assets, 'mascot-deadpan') ?? resolveAsset(assets, 'deadpan');
+  const crying = resolveAsset(assets, 'mascot-crying');
+  const panic = resolveAsset(assets, 'mascot-panic');
+  const stingCoin =
+    resolveAsset(assets, 'confetti-coin', 'loop') ?? resolveAsset(assets, 'coin-loop', 'loop');
+  const hawk = resolveAsset(assets, 'hawk-flap') ?? resolveAsset(assets, 'hawk');
+  const dove = resolveAsset(assets, 'dove-flap') ?? resolveAsset(assets, 'dove');
+  const tariffCrate = resolveAsset(assets, 'tariff-crate', 'prop');
+  const warsh = resolveAsset(assets, 'warsh', 'portrait') ?? resolveAsset(assets, 'warsh');
+  const powell = resolveAsset(assets, 'powell', 'portrait') ?? resolveAsset(assets, 'powell');
+  const powellWave = resolveAsset(assets, 'powell-wave');
+  const bannerArt = resolveAsset(assets, 'breaking-banner');
+  const siren = resolveAsset(assets, 'siren-loop', 'loop');
+  const thisIsFine = resolveMeme(assets, 'this is fine');
+  const flame = resolveAsset(assets, 'flame-loop', 'loop');
+  const printer = resolveAsset(assets, 'veo-printer');
+  const printerLoop = resolveAsset(assets, 'printer-loop', 'loop');
+  const moneyShower = resolveAsset(assets, 'mascot-money-shower') ?? resolveAsset(assets, 'money-shower');
+  const rateDial = resolveAsset(assets, 'rate-dial', 'prop');
+  const cpiFlame = resolveAsset(assets, 'cpi-flame', 'prop');
 
-  // Counter milestone ticks: frames (tape-local) where the odometer
-  // crosses a multiple of 10.
-  const tickFrames = useMemo(() => {
+  // ---- beat-local cut points (frames, local to each beat) ----
+  const SETUP = {wipe: 550, meter: 558};
+  const TAPE = {drawStart: 8, drawEnd: 188, wipe: 335, chapter: 345};
+  const TARIFF = {meme: 150, back: 264};
+  const JOBS = {big: 150, bars: 228};
+  const FOMC = {dots: 105, banner: 185, versus: 255};
+  const SOWHAT = {calm: 264};
+
+  // ---- absolute frame anchors ----
+  const S = {
+    coldOpen: beatStart('cold-open'),
+    title: beatStart('title'),
+    setup: beatStart('setup'),
+    tape: beatStart('the-tape'),
+    tariffs: beatStart('move-tariffs'),
+    jobs: beatStart('move-jobs'),
+    fomc: beatStart('move-fomc'),
+    meme: beatStart('meme-react'),
+    zoom: beatStart('zoom'),
+    soWhat: beatStart('so-what'),
+    endcard: beatStart('endcard'),
+  };
+  const STING_FRAMES = 48; // IntroSting; KineticTitle takes the rest of `title`
+
+  // ---- fast-tape odometer milestone ticks (value crosses multiples of 10) ----
+  const tapeTicks = useMemo(() => {
+    const fracAt = (f: number) =>
+      interpolate(f, [TAPE.drawStart, TAPE.drawEnd], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      });
+    const val = (f: number) => valueAt(market, tMin + fracAt(f) * (tMax - tMin), times);
     const out: number[] = [];
-    const val = (f: number) => valueAt(market, tMin + tapePlan.fracAt(f) * (tMax - tMin), times);
-    let prev = Math.floor(val(0) / 10);
+    let prev = Math.floor(val(TAPE.drawStart) / 10);
     let lastTick = -20;
-    for (let f = 1; f <= TAPE_FRAMES; f++) {
+    for (let f = TAPE.drawStart + 1; f <= TAPE.drawEnd; f++) {
       const d = Math.floor(val(f) / 10);
-      if (d !== prev && f - lastTick >= 12) {
+      if (d !== prev && f - lastTick >= 6) {
         out.push(f);
         lastTick = f;
       }
       prev = d;
     }
-    return out.slice(0, 24);
-  }, [market, times, tMin, tMax, tapePlan]);
+    return out.slice(0, 16);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [market, times, tMin, tMax]);
 
-  const zoomWindow = {start: '2026-05-15T00:00:00Z', end: '2026-07-11T23:00:00Z'};
+  // Hard cuts (2-frame flash + thud unless the incoming scene slams itself).
+  const cuts: Array<{at: number; thud?: boolean}> = [
+    {at: S.setup},
+    {at: S.tape},
+    {at: S.tariffs},
+    {at: S.tariffs + TARIFF.meme},
+    {at: S.tariffs + TARIFF.back},
+    {at: S.jobs, thud: false}, // headline card thuds itself
+    {at: S.jobs + JOBS.big, thud: false}, // BigNumber ka-chings itself
+    {at: S.jobs + JOBS.bars, thud: false},
+    {at: S.fomc, thud: false}, // headline card thuds itself
+    {at: S.fomc + FOMC.dots},
+    {at: S.fomc + FOMC.versus},
+    {at: S.meme},
+    {at: S.zoom},
+    {at: S.soWhat},
+    {at: S.endcard},
+  ];
 
-  // ---- art assets (all resolve to null until assets.json is generated;
-  //      components then render their house placeholders) ----
-  const warsh = resolveAsset(assets, 'warsh', 'portrait') ?? resolveAsset(assets, 'warsh');
-  const powell = resolveAsset(assets, 'powell', 'portrait') ?? resolveAsset(assets, 'powell');
-  const thisIsFine = resolveMeme(assets, 'this is fine');
-  const rateDial = resolveAsset(assets, 'rate-dial', 'prop') ?? resolveAsset(assets, 'rate-dial');
-  const cpiFlame = resolveAsset(assets, 'cpi-flame', 'prop') ?? resolveAsset(assets, 'cpi-flame');
-  const goblinBug =
-    resolveAsset(assets, 'goblin-deadpan') ?? resolveAsset(assets, 'deadpan');
-
-  // move-fomc face-off: cut in after the last annotation lands, hold ~3s,
-  // hard-cut back to the chart. (Tape-local frames.)
-  const VS_FRAMES = 90;
-  const fomcStop = tapePlan.stops[tapePlan.stops.length - 1];
-  const vsFrom = Math.min(
-    fomcStop ? Math.round(fomcStop.startFrame) + 45 : TAPE_FRAMES - VS_FRAMES - 30,
-    TAPE_FRAMES - VS_FRAMES - 10,
-  );
-
-  // "Network bug" goblin watermark: visible through chart scenes only —
-  // skips title, the VS cutaway, meme-react and the endcard.
+  // "Network bug" goblin: chart scenes only (fast tape + zoom).
   const bugWindows: Array<[number, number]> = [
-    [0, beatFrames('cold-open')],
-    [beatStart('setup'), TAPE_START + vsFrom],
-    [TAPE_START + vsFrom + VS_FRAMES, beatStart('meme-react')],
-    [beatStart('zoom'), beatStart('endcard')],
+    [S.tape, S.tape + TAPE.chapter],
+    [S.zoom, S.soWhat],
   ];
 
   return (
-    <CRTOverlay intensity={crt ? 0.6 : 0}>
+    <CRTOverlay intensity={crt ? 0.55 : 0}>
     <AbsoluteFill style={{background: COLORS.canvas}}>
-      {/* ---- cold-open: dimmed card, huge counter, line hidden ---- */}
-      <Sequence durationInFrames={beatFrames('cold-open')} name="Cold open">
-        <ColdOpen data={episode} lastPrice={last.p} />
+      {/* ---- cold-open: fed-storm b-roll + huge counter ---- */}
+      <Sequence durationInFrames={beatFrames('cold-open')} name="Cold open: storm">
+        <ColdOpenStorm storm={storm} pct={HEADLINE_PCT} />
       </Sequence>
 
-      {/* ---- title ---- */}
-      <Sequence from={beatStart('title')} durationInFrames={beatFrames('title')} name="Title">
+      {/* ---- title: IntroSting then the kinetic wordmark ---- */}
+      <Sequence from={S.title} durationInFrames={STING_FRAMES} name="Intro sting">
+        <IntroSting goblin={deadpan} coin={stingCoin} kicker="A KALSHI MARKETS SHOW" />
+      </Sequence>
+      <Sequence
+        from={S.title + STING_FRAMES}
+        durationInFrames={beatFrames('title') - STING_FRAMES}
+        name="Title"
+      >
         <KineticTitle
-          title="THE MARKET SAYS"
-          accentWords={[1]}
+          title="THE FED... HIKES?"
+          accentWords={[2]}
           kicker="EP 01 · FED HIKE WATCH"
           stagger={5}
         />
@@ -363,92 +704,238 @@ export const FedHikeEpisode: React.FC<{
         ))}
       </Sequence>
 
-      {/* ---- setup: chart at low reveal + the two stat cards ---- */}
-      <Sequence from={beatStart('setup')} durationInFrames={beatFrames('setup')} name="Setup">
-        <MarketChartScene
-          data={episode}
-          reveal={{startFrame: 6, endFrame: 76, from: 0, to: 0.15}}
-          showCursor
-          showCounter
-          showAnnotations={false}
-          curve="step"
-        />
-        <AbsoluteFill
-          style={{
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            paddingLeft: '44%',
-            gap: 46,
-          }}
-        >
-          <StatCard
-            label="HIKE by Dec 31 2026"
-            value="51%"
-            accent={tokens.yes}
-            appearFrame={100}
+      {/* ---- setup: anchor goblin at the news desk -> stat cards -> meter ---- */}
+      <Sequence from={S.setup} durationInFrames={SETUP.meter} name="Setup: news desk">
+        <DeskShot backdrop={newsdesk} sprite={talkLoop} talk>
+          <LiveChip />
+          <LowerThird
+            name="Anchor Goblin"
+            sub="definitely a financial professional"
+            appearFrame={26}
           />
-          <StatCard label="CUT by Dec 31 2026" value="25%" accent={tokens.no} appearFrame={160} />
-        </AbsoluteFill>
+          <div
+            style={{
+              position: 'absolute',
+              left: '58%',
+              top: '20%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 42,
+            }}
+          >
+            <StatCard label="HIKE by Dec 31 2026" value="51%" accent={tokens.yes} appearFrame={330} />
+            <StatCard label="CUT by Dec 31 2026" value="25%" accent={tokens.no} appearFrame={430} />
+          </div>
+          {/* volume gag chip as "$1.2M has settled on: coin flip" lands */}
+          <PunchChip text={'$1.2M SAYS: COIN FLIP'} appearFrame={250} x="21%" y="30%" rotate={-3} fontSize={28} />
+        </DeskShot>
         <Sequence from={4} durationInFrames={30} name="Setup whoosh" layout="none">
           <Audio src={sfx('whoosh-down')} volume={0.3} />
         </Sequence>
-        {[100, 160].map((f) => (
+        {[330, 430].map((f) => (
           <Sequence key={f} from={f} durationInFrames={12} name={`Stat pop ${f}`} layout="none">
             <Audio src={sfx('pop-in')} volume={0.4} />
           </Sequence>
         ))}
       </Sequence>
+      {/* hawk-dove meter sweeps as "twice as likely up as down" lands */}
+      <Sequence
+        from={S.setup + SETUP.meter}
+        durationInFrames={beatFrames('setup') - SETUP.meter}
+        name="Setup: fed vibes meter"
+      >
+        <HawkDoveMeter
+          value={0.67}
+          from={0.12}
+          sweepAt={20}
+          title="FED VIBES"
+          label="HIKE 2X AS LIKELY AS CUT"
+          hawk={hawk}
+          dove={dove}
+          appearFrame={0}
+        />
+      </Sequence>
+      <Sequence from={S.setup + SETUP.wipe} durationInFrames={16} name="Setup wipe">
+        <TickerWipe text={TICKER_TAPE} direction="down" />
+      </Sequence>
 
-      {/* ---- the-tape -> move-tariffs -> move-jobs -> move-fomc ----
-           One continuous beat-paced draw: ease fast to each annotation,
-           hold 3s while its callout is active, continue. */}
-      <Sequence from={TAPE_START} durationInFrames={TAPE_FRAMES} name="The Tape (moves)">
+      {/* ---- the-tape: QUICK REFERENCE — full tape in 6s, then chapter card ---- */}
+      <Sequence from={S.tape} durationInFrames={TAPE.chapter} name="The Tape (quick)">
         <MarketChartScene
           data={episode}
-          reveal={tapeSpec}
+          reveal={{startFrame: TAPE.drawStart, endFrame: TAPE.drawEnd, from: 0, to: 1}}
           showCursor
           showCounter
           showAnnotations
           curve="step"
         />
-        {/* annotation pops: alarm for the tariff whipsaw, pop-in for the rest */}
-        {tapePlan.stops.map((s, i) => (
-          <Sequence
-            key={i}
-            from={Math.round(s.startFrame)}
-            durationInFrames={20}
-            name={`Annotation sfx ${i}`}
-            layout="none"
-          >
-            <Audio src={sfx(i === 0 ? 'alarm' : 'pop-in')} volume={i === 0 ? 0.35 : 0.45} />
-          </Sequence>
-        ))}
-        {/* odometer milestone ticks */}
-        {tickFrames.map((f) => (
+        {tapeTicks.map((f) => (
           <Sequence key={f} from={f} durationInFrames={6} name={`Tick ${f}`} layout="none">
             <Audio src={sfx('tick')} volume={0.3} />
           </Sequence>
         ))}
-        {/* move-fomc face-off: WARSH vs POWELL, then back to the chart */}
-        <Sequence from={vsFrom} durationInFrames={VS_FRAMES} name="Versus: Warsh v Powell">
-          <VersusCard
-            left={{asset: warsh, label: 'WARSH', stat: '9 OF 18 SEE A HIKE'}}
-            right={{asset: powell, label: 'POWELL', stat: 'CUT 3x IN 2025'}}
+      </Sequence>
+      <Sequence from={S.tape + TAPE.wipe} durationInFrames={16} name="Tape wipe">
+        <TickerWipe text={TICKER_TAPE} direction="up" />
+      </Sequence>
+      <Sequence
+        from={S.tape + TAPE.chapter}
+        durationInFrames={beatFrames('the-tape') - TAPE.chapter}
+        name="Chapter II"
+      >
+        <ChapterCard part={2} title="HOW WE GOT HERE" tape={TICKER_TAPE} />
+      </Sequence>
+
+      {/* ---- move-tariffs: April 2025 whipsaw window -> crying goblin -> "chose yes" ---- */}
+      <Sequence from={S.tariffs} durationInFrames={TARIFF.meme} name="Tariff whipsaw">
+        <MarketChartScene
+          data={episode}
+          reveal="2025-05-15T00:00:00Z"
+          zoom={{
+            window: {start: '2025-03-22T00:00:00Z', end: '2025-05-20T00:00:00Z'},
+            atFrame: 2,
+            durationInFrames: 24,
+          }}
+          showCursor
+          showCounter
+          showAnnotations
+          curve="step"
+        />
+        <Sequence from={34} durationInFrames={TARIFF.meme - 34} name="Prop: tariff crate">
+          <PropPop asset={tariffCrate} label="TARIFFS" x="76%" y="26%" size={230} wobble />
+        </Sequence>
+        <Sequence from={2} durationInFrames={24} name="Tariff alarm" layout="none">
+          <Audio src={sfx('alarm')} volume={0.32} />
+        </Sequence>
+      </Sequence>
+      <Sequence
+        from={S.tariffs + TARIFF.meme}
+        durationInFrames={TARIFF.back - TARIFF.meme}
+        name="Goblin cries"
+      >
+        <MemeCutaway
+          asset={crying}
+          caption="prices say HIKE. growth says CUT."
+          credit="goblin cam"
+        />
+      </Sequence>
+      <Sequence
+        from={S.tariffs + TARIFF.back}
+        durationInFrames={beatFrames('move-tariffs') - TARIFF.back}
+        name="Market chose yes"
+      >
+        <MarketChartScene
+          data={episode}
+          reveal="2025-06-05T00:00:00Z"
+          window={{start: '2025-03-22T00:00:00Z', end: '2025-06-10T00:00:00Z'}}
+          showCursor
+          showCounter
+          showAnnotations
+          curve="step"
+        />
+        <PunchChip text="THE MARKET CHOSE: YES" appearFrame={16} x="62%" y="72%" rotate={-2} />
+      </Sequence>
+
+      {/* ---- move-jobs: headline slam -> 172,000 zoom -> BigNumber -> bars ---- */}
+      <Sequence from={S.jobs} durationInFrames={JOBS.big} name="Jobs headline zoom">
+        <ArticleZoom
+          src={JOBS_HEADLINE.src}
+          source={JOBS_HEADLINE.source}
+          date={JOBS_HEADLINE.date}
+          headline={JOBS_HEADLINE.headline}
+          url={JOBS_HEADLINE.url}
+          width={1400}
+          aspect={JOBS_HEADLINE.aspect}
+          highlight={JOBS_HEADLINE.highlight}
+          highlightAt={40}
+          appearFrame={2}
+          index={0}
+          zoomAt={78}
+          maxScale={3.2}
+        />
+      </Sequence>
+      <Sequence from={S.jobs + JOBS.big} durationInFrames={JOBS.bars - JOBS.big} name="+172K slam">
+        <BigNumber
+          value={172}
+          prefix="+"
+          suffix="K"
+          label="Jobs added in May"
+          sub="Consensus: +80K"
+          kicker="JUN 5 2026 · JOBS DAY"
+          sfx="ka-ching"
+        />
+      </Sequence>
+      <Sequence
+        from={S.jobs + JOBS.bars}
+        durationInFrames={beatFrames('move-jobs') - JOBS.bars}
+        name="Jobs vs consensus"
+      >
+        <CompareBars
+          title="Blowout."
+          unit="Jobs added · thousands"
+          rows={[
+            {label: 'May payrolls', value: 172, display: '+172K', slot: 0},
+            {label: 'Consensus', value: 80, display: '+80K', slot: 1},
+            {label: 'Apr (revised)', value: 139, display: '+139K', slot: 2},
+          ]}
+          appearFrame={2}
+          stagger={10}
+        />
+      </Sequence>
+
+      {/* ---- move-fomc: headline -> dot plot + BREAKING -> Warsh v Powell ---- */}
+      <Sequence from={S.fomc} durationInFrames={FOMC.dots} name="FOMC headline">
+        <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center'}}>
+          <HeadlineCard
+            src={FOMC_HEADLINE.src}
+            source={FOMC_HEADLINE.source}
+            date={FOMC_HEADLINE.date}
+            headline={FOMC_HEADLINE.headline}
+            url={FOMC_HEADLINE.url}
+            width={1400}
+            aspect={FOMC_HEADLINE.aspect}
+            highlight={FOMC_HEADLINE.highlight}
+            highlightAt={45}
+            appearFrame={2}
+            index={1}
           />
-        </Sequence>
-        {/* hard 2-frame flashes bracketing the cutaway */}
-        <CutFlash at={vsFrom} />
-        <Sequence from={vsFrom + VS_FRAMES} durationInFrames={2} name="VS out flash">
-          <AbsoluteFill style={{background: '#ffffff'}} />
-        </Sequence>
+        </AbsoluteFill>
+      </Sequence>
+      <Sequence from={S.fomc + FOMC.dots} durationInFrames={FOMC.versus - FOMC.dots} name="Dot plot">
+        <DotPlot
+          columns={DOT_COLUMNS}
+          title="FOMC DOT PLOT · JUN 2026"
+          subtitle="Each square = one participant · year-end target midpoint"
+          highlight={{column: '2026', min: 3.875}}
+          highlightAt={62}
+          highlightLabel="9 of 18 see a hike"
+          appearFrame={0}
+        />
+      </Sequence>
+      <Sequence from={S.fomc + FOMC.banner} durationInFrames={FOMC.versus - FOMC.banner} name="Breaking banner">
+        <BreakingBanner
+          banner={bannerArt}
+          siren={siren}
+          text="BREAKING"
+          sub="DOTS FLIP HAWKISH"
+          outAfter={52}
+          seed="dots-breaking"
+        />
+      </Sequence>
+      <Sequence
+        from={S.fomc + FOMC.versus}
+        durationInFrames={beatFrames('move-fomc') - FOMC.versus}
+        name="Versus: Warsh v Powell"
+      >
+        <VersusCard
+          left={{asset: warsh, label: 'WARSH', stat: '9 OF 18 SEE A HIKE'}}
+          right={{asset: powell, label: 'POWELL', stat: 'CUT 3x IN 2025'}}
+        />
       </Sequence>
 
       {/* ---- meme-react ---- */}
-      <Sequence
-        from={beatStart('meme-react')}
-        durationInFrames={beatFrames('meme-react')}
-        name="Meme react"
-      >
+      <Sequence from={S.meme} durationInFrames={beatFrames('meme-react')} name="Meme react">
         <MemeCutaway
           asset={thisIsFine}
           src="assets/mascot/v2/panic.png"
@@ -458,59 +945,73 @@ export const FedHikeEpisode: React.FC<{
         />
       </Sequence>
 
-      {/* ---- zoom: last two months ---- */}
-      <Sequence from={beatStart('zoom')} durationInFrames={beatFrames('zoom')} name="Zoom">
-        <MarketChartScene
-          data={episode}
-          reveal={1}
-          zoom={{window: zoomWindow, atFrame: 12, durationInFrames: 70}}
-          showCursor
-          showCounter
-          showAnnotations
-          curve="step"
+      {/* ---- zoom: hourly close-up + fire ---- */}
+      <Sequence from={S.zoom} durationInFrames={beatFrames('zoom')} name="Zoom + fire">
+        <ZoomScene data={episode} flame={flame} />
+      </Sequence>
+
+      {/* ---- so-what: money printer gag -> calm desk ---- */}
+      <Sequence from={S.soWhat} durationInFrames={SOWHAT.calm} name="What the future costs">
+        <MoneyPrinterBeat
+          printer={printer}
+          coin={stingCoin}
+          printerLoop={printerLoop}
+          goblin={moneyShower}
+          caption="WHAT THE FUTURE COSTS"
+          coinsAt={14}
+          seed="sowhat-printer"
         />
-        <Sequence from={12} durationInFrames={30} name="Zoom whoosh" layout="none">
-          <Audio src={sfx('whoosh-up')} volume={0.45} />
-        </Sequence>
+      </Sequence>
+      <Sequence
+        from={S.soWhat + SOWHAT.calm}
+        durationInFrames={beatFrames('so-what') - SOWHAT.calm}
+        name="Calm desk"
+      >
+        <DeskShot backdrop={newsdesk} sprite={deadpan} talk={false} spriteSize={600} spriteTop={205}>
+          <LowerThird name="Anchor Goblin" sub="certainty costs extra" appearFrame={16} />
+          <Sequence from={60} durationInFrames={170} name="Prop: rate dial">
+            <PropPop asset={rateDial} label="RATE DIAL" x="13%" y="30%" size={190} wobble />
+          </Sequence>
+          <Sequence from={140} durationInFrames={170} name="Prop: cpi flame">
+            <PropPop asset={cpiFlame} label="CPI" x="87%" y="28%" size={170} wobble />
+          </Sequence>
+          <PunchChip
+            text={'THE FED\'S JOB IS TO BE BORING.'}
+            appearFrame={250}
+            x="50%"
+            y="24%"
+            rotate={-1.5}
+            fontSize={30}
+          />
+        </DeskShot>
       </Sequence>
 
-      {/* ---- so-what: full tape, slow drift ---- */}
-      <Sequence from={beatStart('so-what')} durationInFrames={beatFrames('so-what')} name="So what">
-        <SoWhat data={episode} />
-        {/* mid-beat prop pops at the chart's edges — small, off the line */}
-        <Sequence from={170} durationInFrames={220} name="Prop: rate dial">
-          <PropPop asset={rateDial} label="RATE DIAL" x="8%" y="77%" size={140} wobble />
-        </Sequence>
-        <Sequence from={300} durationInFrames={200} name="Prop: cpi flame">
-          <PropPop asset={cpiFlame} label="CPI" x="94%" y="33%" size={120} wobble />
-        </Sequence>
-      </Sequence>
-
-      {/* ---- endcard: resolution watch ---- */}
-      <Sequence from={beatStart('endcard')} durationInFrames={beatFrames('endcard')} name="End card">
+      {/* ---- endcard: resolution watch + Powell waves goodbye ---- */}
+      <Sequence from={S.endcard} durationInFrames={beatFrames('endcard')} name="End card">
         <EndCard
           entries={[
             {
               market: 'FED HIKE BY DEC 31, 2026',
-              call: `covered @ ${Math.round(last.p)}%`,
+              call: `covered @ ${HEADLINE_PCT}%`,
               status: 'OPEN',
             },
           ]}
         />
+        <Sequence from={90} durationInFrames={beatFrames('endcard') - 90} name="Powell waves">
+          <PowellWave asset={powellWave} />
+        </Sequence>
         <Sequence from={10} durationInFrames={30} name="Ka-ching" layout="none">
           <Audio src={sfx('ka-ching')} volume={0.4} />
         </Sequence>
       </Sequence>
 
-      {/* "network bug" goblin watermark over the chart scenes */}
+      {/* "network bug" goblin over the chart scenes */}
       {bugWindows.map(([from, to]) => (
         <Sequence key={from} from={from} durationInFrames={to - from} name={`Network bug ${from}`}>
           <AbsoluteFill style={{pointerEvents: 'none'}}>
-            {/* Sits above the footer band (pad 81 + footer 54 = 135px from
-                the bottom at 1080p) so it never crowds the disclaimer. */}
             <div style={{position: 'absolute', right: 34, bottom: 148, opacity: 0.72}}>
               <SpriteLoop
-                asset={goblinBug}
+                asset={panic ?? deadpan}
                 fallbackSrc="assets/mascot/v2/deadpan-alpha.png"
                 fps={6}
                 size={120}
@@ -523,14 +1024,76 @@ export const FedHikeEpisode: React.FC<{
       {/* CAPTIONS PLACEHOLDER: no VO yet. Once vo/words.json exists, mount
           <CaptionLayer timeline={words} /> across the narrated beats. */}
 
-      {/* hard cuts: 2-frame white flash + thud at each scene boundary */}
-      {BEATS.filter((b) => b.cut).map((b) => (
-        <CutFlash key={b.id} at={beatStart(b.id)} />
+      {/* hard cuts */}
+      {cuts.map((c) => (
+        <CutFlash key={c.at} at={c.at} thud={c.thud} />
       ))}
 
-      {/* opt-in episode progress bar, above the footer band */}
-      {progressBar ? <ProgressBar bottom={142} /> : null}
+      {/* VHS glitch bursts: cold-open -> sting, printer -> calm desk */}
+      <Sequence from={S.title - 15} durationInFrames={30} name="Glitch: open">
+        <VHSGlitch seed="open" />
+      </Sequence>
+      <Sequence from={S.soWhat + SOWHAT.calm - 6} durationInFrames={12} name="Glitch: calm">
+        <VHSGlitch seed="calm" />
+      </Sequence>
+
+      {/* opt-in episode progress bar along the bottom edge */}
+      {progressBar ? <ProgressBar bottom={24} /> : null}
     </AbsoluteFill>
     </CRTOverlay>
+  );
+};
+
+/** Powell waving goodbye in the endcard corner. */
+const PowellWave: React.FC<{asset: AssetEntry | null}> = ({asset}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const s = spring({
+    frame,
+    fps,
+    config: {damping: 12, stiffness: 220, mass: 0.8},
+    durationInFrames: 14,
+  });
+  // Gentle stepped wave bob.
+  const bob = Math.floor(frame / 8) % 2 === 0 ? 0 : -6;
+  if (!asset) return null;
+  return (
+    <AbsoluteFill style={{pointerEvents: 'none'}}>
+      <div
+        style={{
+          position: 'absolute',
+          left: 46,
+          bottom: -12,
+          translate: `0px ${((1 - s) * 320 + bob).toFixed(1)}px`,
+        }}
+      >
+        <Img
+          src={assetSrc(asset.alpha ?? asset.file)}
+          style={{width: 300, height: 300, objectFit: 'contain'}}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            left: 190,
+            top: -34,
+            fontFamily: MONO_FAMILY,
+            fontWeight: 700,
+            fontSize: 21,
+            color: COLORS.ink,
+            background: COLORS.cream,
+            border: pixelBorder(3),
+            boxShadow: hardShadow(inkAlpha(0.25)),
+            padding: '8px 14px',
+            rotate: '-3deg',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          THANKS FOR THE MEMORIES
+        </div>
+      </div>
+      <Sequence from={0} durationInFrames={10} name="Wave blip" layout="none">
+        <Audio src={sfx('blip')} volume={0.32} />
+      </Sequence>
+    </AbsoluteFill>
   );
 };

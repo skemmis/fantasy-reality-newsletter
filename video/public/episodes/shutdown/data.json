@@ -1,24 +1,334 @@
 {
   "slug": "shutdown",
-  "markets": [],
-  "annotations": [
-    {"t": "2025-10-01T04:00:00Z", "label": "SHUTDOWN BEGINS\nfunding lapses at midnight", "dx": 0, "dy": -30, "id": "begins"},
-    {"t": "2025-11-05T05:00:00Z", "label": "LONGEST EVER — 35 DAYS\nmarket called 40+; DC said 'soon'", "dx": -10, "dy": -46, "id": "record"},
-    {"t": "2025-11-12T05:00:00Z", "label": "REOPENS · 43 DAYS\nTrump signs the CR", "dx": -20, "dy": -34, "id": "ends"}
+  "markets": [
+    {
+      "ticker": "KXGOVSHUTLENGTH-26JAN01-40D",
+      "name": "More than 40 days",
+      "slot": 0,
+      "points": [
+        {
+          "t": "2025-10-04T04:00:00Z",
+          "p": 11.5
+        },
+        {
+          "t": "2025-10-05T04:00:00Z",
+          "p": 16.5
+        },
+        {
+          "t": "2025-10-06T04:00:00Z",
+          "p": 17.5
+        },
+        {
+          "t": "2025-10-07T04:00:00Z",
+          "p": 11.5
+        },
+        {
+          "t": "2025-10-08T04:00:00Z",
+          "p": 12.0
+        },
+        {
+          "t": "2025-10-09T04:00:00Z",
+          "p": 20.5
+        },
+        {
+          "t": "2025-10-10T04:00:00Z",
+          "p": 22.0
+        },
+        {
+          "t": "2025-10-11T04:00:00Z",
+          "p": 29.5
+        },
+        {
+          "t": "2025-10-12T04:00:00Z",
+          "p": 29.5
+        },
+        {
+          "t": "2025-10-13T04:00:00Z",
+          "p": 36.5
+        },
+        {
+          "t": "2025-10-14T04:00:00Z",
+          "p": 35.5
+        },
+        {
+          "t": "2025-10-15T04:00:00Z",
+          "p": 34.5
+        },
+        {
+          "t": "2025-10-16T04:00:00Z",
+          "p": 46.5
+        },
+        {
+          "t": "2025-10-17T04:00:00Z",
+          "p": 46.5
+        },
+        {
+          "t": "2025-10-18T04:00:00Z",
+          "p": 53.5
+        },
+        {
+          "t": "2025-10-19T04:00:00Z",
+          "p": 54.5
+        },
+        {
+          "t": "2025-10-20T04:00:00Z",
+          "p": 55.5
+        },
+        {
+          "t": "2025-10-21T04:00:00Z",
+          "p": 42.5
+        },
+        {
+          "t": "2025-10-22T04:00:00Z",
+          "p": 52.5
+        },
+        {
+          "t": "2025-10-23T04:00:00Z",
+          "p": 51.5
+        },
+        {
+          "t": "2025-10-24T04:00:00Z",
+          "p": 62.5
+        },
+        {
+          "t": "2025-10-25T04:00:00Z",
+          "p": 64.5
+        },
+        {
+          "t": "2025-10-26T04:00:00Z",
+          "p": 68.5
+        },
+        {
+          "t": "2025-10-27T04:00:00Z",
+          "p": 66.5
+        },
+        {
+          "t": "2025-10-28T04:00:00Z",
+          "p": 63.5
+        },
+        {
+          "t": "2025-10-29T04:00:00Z",
+          "p": 66.5
+        },
+        {
+          "t": "2025-10-30T04:00:00Z",
+          "p": 62.0
+        },
+        {
+          "t": "2025-10-31T04:00:00Z",
+          "p": 63.5
+        },
+        {
+          "t": "2025-11-01T04:00:00Z",
+          "p": 67.5
+        },
+        {
+          "t": "2025-11-02T04:00:00Z",
+          "p": 69.5
+        },
+        {
+          "t": "2025-11-03T04:00:00Z",
+          "p": 74.5
+        },
+        {
+          "t": "2025-11-04T05:00:00Z",
+          "p": 68.5
+        },
+        {
+          "t": "2025-11-05T05:00:00Z",
+          "p": 72.5
+        },
+        {
+          "t": "2025-11-06T05:00:00Z",
+          "p": 90.5
+        },
+        {
+          "t": "2025-11-07T05:00:00Z",
+          "p": 92.5
+        },
+        {
+          "t": "2025-11-08T05:00:00Z",
+          "p": 95.5
+        },
+        {
+          "t": "2025-11-09T05:00:00Z",
+          "p": 98.5
+        },
+        {
+          "t": "2025-11-10T05:00:00Z",
+          "p": 99.5
+        },
+        {
+          "t": "2025-11-11T05:00:00Z",
+          "p": 99.0
+        }
+      ],
+      "volume": [
+        {
+          "t": "2025-10-04T04:00:00Z",
+          "v": 1371.0
+        },
+        {
+          "t": "2025-10-05T04:00:00Z",
+          "v": 20551.0
+        },
+        {
+          "t": "2025-10-06T04:00:00Z",
+          "v": 7311.0
+        },
+        {
+          "t": "2025-10-07T04:00:00Z",
+          "v": 20198.0
+        },
+        {
+          "t": "2025-10-08T04:00:00Z",
+          "v": 29327.0
+        },
+        {
+          "t": "2025-10-09T04:00:00Z",
+          "v": 48266.0
+        },
+        {
+          "t": "2025-10-10T04:00:00Z",
+          "v": 76775.0
+        },
+        {
+          "t": "2025-10-11T04:00:00Z",
+          "v": 101462.0
+        },
+        {
+          "t": "2025-10-12T04:00:00Z",
+          "v": 51095.0
+        },
+        {
+          "t": "2025-10-13T04:00:00Z",
+          "v": 29706.0
+        },
+        {
+          "t": "2025-10-14T04:00:00Z",
+          "v": 88486.0
+        },
+        {
+          "t": "2025-10-15T04:00:00Z",
+          "v": 166777.0
+        },
+        {
+          "t": "2025-10-16T04:00:00Z",
+          "v": 131796.0
+        },
+        {
+          "t": "2025-10-17T04:00:00Z",
+          "v": 85607.0
+        },
+        {
+          "t": "2025-10-18T04:00:00Z",
+          "v": 75966.0
+        },
+        {
+          "t": "2025-10-19T04:00:00Z",
+          "v": 25908.0
+        },
+        {
+          "t": "2025-10-20T04:00:00Z",
+          "v": 41789.0
+        },
+        {
+          "t": "2025-10-21T04:00:00Z",
+          "v": 129031.0
+        },
+        {
+          "t": "2025-10-22T04:00:00Z",
+          "v": 67549.0
+        },
+        {
+          "t": "2025-10-23T04:00:00Z",
+          "v": 92336.0
+        },
+        {
+          "t": "2025-10-24T04:00:00Z",
+          "v": 129736.0
+        },
+        {
+          "t": "2025-10-25T04:00:00Z",
+          "v": 77496.0
+        },
+        {
+          "t": "2025-10-26T04:00:00Z",
+          "v": 63099.0
+        },
+        {
+          "t": "2025-10-27T04:00:00Z",
+          "v": 107087.0
+        },
+        {
+          "t": "2025-10-28T04:00:00Z",
+          "v": 156917.0
+        },
+        {
+          "t": "2025-10-29T04:00:00Z",
+          "v": 157188.0
+        },
+        {
+          "t": "2025-10-30T04:00:00Z",
+          "v": 108436.0
+        },
+        {
+          "t": "2025-10-31T04:00:00Z",
+          "v": 160045.0
+        },
+        {
+          "t": "2025-11-01T04:00:00Z",
+          "v": 76887.0
+        },
+        {
+          "t": "2025-11-02T04:00:00Z",
+          "v": 33314.0
+        },
+        {
+          "t": "2025-11-03T04:00:00Z",
+          "v": 0.0
+        },
+        {
+          "t": "2025-11-04T05:00:00Z",
+          "v": 109434.0
+        },
+        {
+          "t": "2025-11-05T05:00:00Z",
+          "v": 159646.0
+        },
+        {
+          "t": "2025-11-06T05:00:00Z",
+          "v": 162943.0
+        },
+        {
+          "t": "2025-11-07T05:00:00Z",
+          "v": 243196.0
+        },
+        {
+          "t": "2025-11-08T05:00:00Z",
+          "v": 399026.0
+        },
+        {
+          "t": "2025-11-09T05:00:00Z",
+          "v": 357135.0
+        },
+        {
+          "t": "2025-11-10T05:00:00Z",
+          "v": 2648853.0
+        },
+        {
+          "t": "2025-11-11T05:00:00Z",
+          "v": 183869.0
+        }
+      ]
+    }
   ],
+  "annotations": [],
   "meta": {
-    "title": "How long will the government shutdown last?",
-    "generated_at": "2026-07-12T00:00:00Z",
+    "title": "Will the federal government shut down for more than 40 days?",
+    "generated_at": "2026-07-12T05:13:03+00:00",
     "interval": "1d",
-    "last_price_pct": null,
-    "volume_usd": null,
-    "data_status": "TAPE_UNAVAILABLE",
-    "note": "The Kalshi API instance available in this environment returns event metadata for every shutdown series but ZERO nested markets and ZERO candlesticks (verified 2026-07-12 across api.elections.kalshi.com and api.kalshi.com, all ticker/status/KX-drop variants, and scripts/export_episode_data.py itself, which fetches fedhike fine but raises 'Event ... has no markets' for all of these). No tape was fabricated. Re-run the exporter to populate markets[] when the data is reachable.",
-    "target_markets": [
-      {"role": "retro-primary", "ticker": "KXGOVSHUTLENGTH-26JAN01", "title": "How long will the government shutdown last? (Sep 5 2025 – Jan 1 2026)", "resolved": "43 days (bracket 41+)", "reexport": "python3 scripts/export_episode_data.py KXGOVSHUTLENGTH-26JAN01 --slug shutdown --interval 1d --annotations annotations.json"},
-      {"role": "retro-binary", "ticker": "KXSHUTDOWNBY-25", "title": "Government shutdown in 2025?", "resolved": "YES"},
-      {"role": "closeup", "ticker": "KXGOVSHUTLENGTH-26JAN01", "window": "2025-10-25 .. 2025-11-13", "reexport": "python3 scripts/export_episode_data.py KXGOVSHUTLENGTH-26JAN01 --slug shutdown-closeup --interval 1h --start 2025-10-25 --end 2025-11-13"},
-      {"role": "live", "ticker": "KXSHUTDOWNBY-26DEC31", "title": "Government shutdown in 2026?", "status": "OPEN (no tradeable data returned here)"}
-    ]
+    "last_price_pct": 99.0,
+    "volume_usd": 5292323
   }
 }

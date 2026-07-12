@@ -116,8 +116,31 @@ class KalshiClient:
         if hit and time.monotonic() - hit[0] < _CACHE_TTL_S:
             return hit[1]
         event = self._get(f"/events/{event_ticker}", params={"with_nested_markets": True})["event"]
+        if not event.get("markets"):
+            # A settled/aged event serves no nested markets on the live path
+            # (the Feb 2026 API split moved them to /historical); backfill from
+            # there so resolve() and list_markets() still see them.
+            hist = self._historical_event_markets(event_ticker)
+            if hist:
+                event["markets"] = hist
         _event_cache[event_ticker] = (time.monotonic(), event)
         return event
+
+    def _historical_event_markets(self, event_ticker: str) -> list[dict]:
+        """Every market of an event from the /historical store (settled/aged
+        markets), paged through. Empty if the event predates the split."""
+        markets: list[dict] = []
+        cursor: str | None = None
+        while True:
+            params = {"event_ticker": event_ticker, "limit": 200}
+            if cursor:
+                params["cursor"] = cursor
+            payload = self._get("/historical/markets", params=params)
+            markets.extend(payload.get("markets") or [])
+            cursor = payload.get("cursor")
+            if not cursor:
+                break
+        return markets
 
     def list_markets(self, ref: str) -> list[dict]:
         """Summaries of every market in an event, highest volume first.
@@ -194,21 +217,59 @@ class KalshiClient:
         if hit and time.monotonic() - hit[0] < _CACHE_TTL_S:
             return hit[1].copy()
 
-        rows: list[dict] = []
-        cursor = start_ts
-        while cursor < end_ts:
-            chunk_end = min(cursor + _MAX_CANDLES * minutes * 60, end_ts)
-            payload = self._get(
-                f"/series/{ref.series_ticker}/markets/{ref.market_ticker}/candlesticks",
-                params={"start_ts": cursor, "end_ts": chunk_end, "period_interval": minutes},
-            )
-            rows.extend(payload.get("candlesticks") or [])
-            cursor = chunk_end
+        rows = self._live_candles(ref, start_ts, end_ts, minutes)
+        if not rows:
+            # Feb 2026 API split: SETTLED/aged markets 404 (or serve nothing)
+            # on the live series path and live only under /historical. Fall
+            # back transparently — _candles_to_df normalizes either schema.
+            rows = self._historical_candles(ref, start_ts, end_ts, minutes)
         df = _candles_to_df(rows)
         if len(_candle_cache) > 32:
             _candle_cache.clear()
         _candle_cache[key] = (time.monotonic(), df.copy())
         return df
+
+    def _paginate_candles(
+        self, path: str, start_ts: int, end_ts: int, minutes: int
+    ) -> list[dict]:
+        """Pull candlesticks from ``path``, paging past the 5000-candle cap."""
+        rows: list[dict] = []
+        cursor = start_ts
+        while cursor < end_ts:
+            chunk_end = min(cursor + _MAX_CANDLES * minutes * 60, end_ts)
+            payload = self._get(
+                path,
+                params={"start_ts": cursor, "end_ts": chunk_end, "period_interval": minutes},
+            )
+            rows.extend(payload.get("candlesticks") or [])
+            cursor = chunk_end
+        return rows
+
+    def _live_candles(
+        self, ref: MarketRef, start_ts: int, end_ts: int, minutes: int
+    ) -> list[dict] | None:
+        """Candles from the live series path — ``None`` if the market has aged
+        out of it (404/410), which signals get_candles to try /historical."""
+        path = f"/series/{ref.series_ticker}/markets/{ref.market_ticker}/candlesticks"
+        try:
+            return self._paginate_candles(path, start_ts, end_ts, minutes)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code in (404, 410):
+                return None
+            raise
+
+    def _historical_candles(
+        self, ref: MarketRef, start_ts: int, end_ts: int, minutes: int
+    ) -> list[dict]:
+        """Candles from the /historical store (settled/aged markets). Empty if
+        the market never migrated there (e.g. a still-live market with no tape)."""
+        path = f"/historical/markets/{ref.market_ticker}/candlesticks"
+        try:
+            return self._paginate_candles(path, start_ts, end_ts, minutes)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code in (404, 410):
+                return []
+            raise
 
     def close(self) -> None:
         self._http.close()
@@ -218,18 +279,28 @@ def _cents(val) -> float | None:
     return float(val) * 100 if val is not None else None
 
 
+def _leg_close(leg: dict | None) -> float | None:
+    """Closing price (cents) of a candle leg — ``price``/``yes_bid``/``yes_ask``.
+
+    Live candles name the field ``close_dollars``; the /historical endpoint
+    (the Feb 2026 API split) uses plain ``close`` — same dollar value either way.
+    """
+    if not leg:
+        return None
+    return _cents(leg.get("close_dollars", leg.get("close")))
+
+
 def _candles_to_df(rows: list[dict]) -> pd.DataFrame:
     records = []
     for c in rows:
-        price = c.get("price") or {}
         records.append(
             {
                 "ts": datetime.fromtimestamp(c["end_period_ts"], tz=timezone.utc),
-                "close": _cents(price.get("close_dollars")),
-                "bid": _cents((c.get("yes_bid") or {}).get("close_dollars")),
-                "ask": _cents((c.get("yes_ask") or {}).get("close_dollars")),
-                "volume": float(c.get("volume_fp") or 0),
-                "open_interest": float(c.get("open_interest_fp") or 0),
+                "close": _leg_close(c.get("price")),
+                "bid": _leg_close(c.get("yes_bid")),
+                "ask": _leg_close(c.get("yes_ask")),
+                "volume": float(c.get("volume_fp") or c.get("volume") or 0),
+                "open_interest": float(c.get("open_interest_fp") or c.get("open_interest") or 0),
             }
         )
     df = pd.DataFrame.from_records(records)
