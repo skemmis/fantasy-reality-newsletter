@@ -16,8 +16,9 @@ All facts verified 2026-07-12 against dated reporting:
   • End: Senate 60–40 to advance Nov 9; House passed & Trump signed Nov 12.
   • ~42M Americans faced losing SNAP food aid if it continued (search 2025-11).
   • "Market beat the pundits": Kalshi priced the shutdown to last 40+ days /
-    past Nov 10 while DC forecast a quick deal (Fox Business "Prediction
-    markets expect government shutdown to last over two weeks"; Yahoo Finance).
+    past Nov 10 while DC forecast a quick deal (Fox Business, Amanda Macias,
+    2025-10-06, "Hopes dim in prediction markets as traders bet government
+    shutdown will drag on for weeks"; Yahoo Finance).
   • Live market still open: KXSHUTDOWNBY-26DEC31 "Government shutdown in 2026?".
 
 DATA CAVEAT: the Kalshi API in this environment returns NO candlesticks for any
@@ -49,6 +50,8 @@ And every few days, a very serious person explained that a deal was "close." A d
 [beat:the-bet]
 
 Here's the part that should bother you. While Washington swore the end was days away, traders on Kalshi kept pricing the shutdown to run past forty days. Not pessimism — arithmetic. Nobody was blinking, so the market refused to.
+
+A market, unlike a pundit, cannot be embarrassed. It has no press secretary. It only has a price.
 
 [beat:move-begins]
 

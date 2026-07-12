@@ -43,7 +43,8 @@ scenes:
     scene: HeadlineCard               # the standoff, in one real card
     est: 26
     props:
-      src: assets/headlines/shutdown-npr.png
+      src: assets/headlines/shutdown-npr-h1.png   # tight headline crop
+      aspect: 8.04
       source: NPR
       date: "NOV 13 2025"
       headline: "Longest government shutdown in U.S. history ends after 43 days"
@@ -66,11 +67,12 @@ scenes:
       - type: HeadlineCard
         at: 11
         props:
-          src: assets/headlines/shutdown-market-fox.png
+          src: assets/headlines/shutdown-market-fox-h1.png   # tight headline crop
+          aspect: 4.59
           source: FOX BUSINESS
-          date: "2025"
-          headline: "Prediction markets expect government shutdown to last over two weeks"
-          width: 900
+          date: "OCT 6 2025"
+          headline: "Hopes dim in prediction markets as traders bet government shutdown will drag on for weeks"
+          width: 980
           tilt: 2
     inserts:
       # PENDING: lights up once data.json/markets[] is populated (see meta.note).
@@ -95,12 +97,11 @@ scenes:
     scene: HeadlineCard               # Nov 5 — the record breaks
     est: 12
     props:
-      src: assets/headlines/shutdown-record-axios.png
+      src: assets/headlines/shutdown-record-axios-h1.png   # tight headline crop
+      aspect: 4.55
       source: AXIOS
       date: "NOV 5 2025"
       headline: "Trump breaks record for longest government shutdown in history"
-      highlight: { x: 0.05, y: 0.5, w: 0.9, h: 0.2 }
-      highlightAt: 30
     note: "day 35 — surprised the networks, not the order book"
 
   - beat: meme-react

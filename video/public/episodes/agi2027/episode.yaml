@@ -52,12 +52,11 @@ scenes:
     scene: HeadlineCard               # Oct 2025 Microsoft restructuring
     est: 14
     props:
-      src: assets/headlines/agi-deal-axios.png
+      src: assets/headlines/agi-deal-axios-h1.png   # tight headline crop
+      aspect: 6.79
       source: AXIOS
       date: "OCT 29 2025"
       headline: "What to know about OpenAI's new deal with Microsoft"
-      highlight: { x: 0.06, y: 0.58, w: 0.88, h: 0.22 }   # the expert-panel line
-      highlightAt: 40
     inserts:
       - { type: MarketChartScene, at: 9, dur: 4, props: { annotationsThrough: panel, revealUntil: "2025-11-01" } }
     note: "an independent expert panel now VERIFIES any AGI call; 24%→11%"
@@ -66,13 +65,12 @@ scenes:
     scene: HeadlineCard               # Apr 2026 the AGI clause dies
     est: 14
     props:
-      src: assets/headlines/agi-clause-uniteai.png
+      src: assets/headlines/agi-clause-uniteai-h1.png   # tight headline crop
+      aspect: 7.13
       source: UNITE.AI
       date: "APR 27 2026"
       headline: "Microsoft Loses OpenAI Exclusivity and AGI Clause in Amended Deal"
       tilt: 1.5
-      highlight: { x: 0.05, y: 0.5, w: 0.9, h: 0.2 }
-      highlightAt: 44
     inserts:
       - { type: MarketChartScene, at: 9, dur: 4, props: { annotationsThrough: clause-dead, revealUntil: "2026-05-02" } }
     note: "declaring AGI now triggers nothing; the April whipsaw 18→10→18→10"
