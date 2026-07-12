@@ -174,6 +174,26 @@ keeps doing thumbnails, static insert stills, and the newsletter.
   survives cancellation for published work — prefer over Storyblocks
   consumer tiers).
 
+### Episode grammar (decided 2026-07-12): the chart is a REFERENCE, not the set
+Every narration line gets an explicit visual assignment in the episode
+spec; default is variety — headline card → stat slam → presser B-roll →
+tape (5–8s) → meme → back. The animated chart earns roughly three
+appearances (cold open, the decisive move, the zoom); everything else
+cuts away. Shot vocabulary beyond charts/memes:
+- **HeadlineCard / ArticleZoom** — screenshots of real articles
+  (Playwright grabber: `scripts/grab_headline.py`), source+date chip,
+  highlight zooms. Attribution + commentary = standard fair use.
+- **PostCard** — re-typeset social/statement excerpts with attribution.
+- **BigNumber / CompareBars / DotPlot** — stat slams that carry the
+  data beats the chart used to carry.
+- **Fed presser / government B-roll** — public domain; downloader +
+  `scripts/ingest_asset.py` curation into the manifest.
+- **Stock B-roll** — Pexels/Pixabay APIs (free, commercial).
+- **TickerWipe** and a small transition/stinger package.
+- **Veo generative cutaways** — seasoning, seeded from house-style stills.
+- **Real GIFs** — Klipy, pending written commercial confirmation
+  (email drafted; until then goblin recreations + public domain).
+
 ### The asset layer (decided, in build)
 Every episode draws from a tagged library at `video/public/assets/`
 (manifest: `assets.json`, resolved by id or `meme_intent` tag from the
