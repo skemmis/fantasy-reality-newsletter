@@ -13,6 +13,7 @@ import {Audio} from '@remotion/media';
 import {COLORS, hardShadow, inkAlpha, pixelBorder} from '../theme/theme';
 import {PIXEL_FAMILY, MONO_FAMILY} from '../fonts';
 import {DigitWheels, snapWheelValue} from './OddsCounter';
+import {useScreenShake} from '../fx/useScreenShake';
 
 export type BigNumberSfx = 'ka-ching' | 'alarm' | 'none';
 
@@ -95,6 +96,15 @@ export const BigNumber: React.FC<BigNumberProps> = ({
           durationInFrames: 12,
         });
 
+  // Screen shake on the slam impact (as the spring lands) and again,
+  // smaller, when the odometer roll tops out.
+  const shake = useScreenShake([appearFrame + 3, appearFrame + 2 + rollFrames], {
+    amp: 11,
+    rotAmp: 0.9,
+    durationInFrames: 14,
+    seed: 'bignumber',
+  });
+
   if (local < 0) return null;
 
   return (
@@ -111,6 +121,8 @@ export const BigNumber: React.FC<BigNumberProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           transform: `scale(${scale})`,
+          translate: shake.translate,
+          rotate: shake.rotate,
           opacity: Math.min(1, s * 2.5),
         }}
       >

@@ -24,6 +24,8 @@ import {PropPop} from '../components/PropPop';
 import {SpriteLoop} from '../components/SpriteLoop';
 import {AssetManifest, resolveAsset, resolveMeme} from '../assets';
 import {annotationFracs, buildBeatReveal} from '../reveal';
+import {CRTOverlay} from '../fx/CRTOverlay';
+import {ProgressBar} from '../fx/ProgressBar';
 
 const FPS = 30;
 
@@ -251,7 +253,11 @@ export const FedHikeEpisode: React.FC<{
   data: EpisodeData | null;
   /** Art manifest (public/assets/assets.json); null before it's generated. */
   assets?: AssetManifest | null;
-}> = ({data, assets = null}) => {
+  /** Opt-in retro screen treatment (scanlines/vignette/tears). */
+  crt?: boolean;
+  /** Opt-in pixel progress bar above the footer. */
+  progressBar?: boolean;
+}> = ({data, assets = null, crt = false, progressBar = false}) => {
   const episode = data ?? sampleEpisode();
   const market = episode.markets[0];
   const last = market.points[market.points.length - 1];
@@ -335,6 +341,7 @@ export const FedHikeEpisode: React.FC<{
   ];
 
   return (
+    <CRTOverlay intensity={crt ? 0.6 : 0}>
     <AbsoluteFill style={{background: COLORS.canvas}}>
       {/* ---- cold-open: dimmed card, huge counter, line hidden ---- */}
       <Sequence durationInFrames={beatFrames('cold-open')} name="Cold open">
@@ -520,6 +527,10 @@ export const FedHikeEpisode: React.FC<{
       {BEATS.filter((b) => b.cut).map((b) => (
         <CutFlash key={b.id} at={beatStart(b.id)} />
       ))}
+
+      {/* opt-in episode progress bar, above the footer band */}
+      {progressBar ? <ProgressBar bottom={142} /> : null}
     </AbsoluteFill>
+    </CRTOverlay>
   );
 };

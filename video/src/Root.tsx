@@ -3,8 +3,14 @@ import {CalculateMetadataFunction, Composition, staticFile} from 'remotion';
 import {TestChart} from './TestChart';
 import {FedHikeEpisode, FEDHIKE_DURATION} from './episodes/fedhike';
 import {makeEpisodeMetadata, EpisodeProps} from './load-episode';
-import {makeEpisodeAssetsMetadata, EpisodeAssetsProps} from './assets';
+import {fetchAssetManifest, makeEpisodeAssetsMetadata, EpisodeAssetsProps} from './assets';
 import {HEADLINE_SHOT, SHOT_REEL_DURATION, ShotReel, ShotReelProps} from './ShotReel';
+import {SHOT_REEL2_DURATION, ShotReel2, ShotReel2Props} from './ShotReel2';
+import {
+  INTRO_STING_DURATION,
+  IntroStingStandalone,
+  IntroStingStandaloneProps,
+} from './components/IntroSting';
 
 const FPS = 30;
 
@@ -21,6 +27,11 @@ const shotReelMetadata: CalculateMetadataFunction<ShotReelProps> = async ({props
     return {props: {...props, headlineSrc: null}};
   }
 };
+
+/** IntroSting only needs the art manifest. */
+const stingMetadata: CalculateMetadataFunction<IntroStingStandaloneProps> = async ({props}) => ({
+  props: {...props, assets: props.assets ?? (await fetchAssetManifest())},
+});
 
 export const Root: React.FC = () => {
   return (
@@ -52,7 +63,9 @@ export const Root: React.FC = () => {
         fps={FPS}
         width={1920}
         height={1080}
-        defaultProps={{data: null, assets: null} satisfies EpisodeAssetsProps}
+        defaultProps={
+          {data: null, assets: null, crt: true, progressBar: true} satisfies EpisodeAssetsProps
+        }
         calculateMetadata={makeEpisodeAssetsMetadata('fedhike')}
       />
       <Composition
@@ -62,8 +75,28 @@ export const Root: React.FC = () => {
         fps={FPS}
         width={1920}
         height={1080}
-        defaultProps={{headlineSrc: null} satisfies ShotReelProps}
+        defaultProps={{headlineSrc: null, crt: true} satisfies ShotReelProps}
         calculateMetadata={shotReelMetadata}
+      />
+      <Composition
+        id="ShotReel2"
+        component={ShotReel2}
+        durationInFrames={SHOT_REEL2_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        defaultProps={{data: null, assets: null} satisfies ShotReel2Props}
+        calculateMetadata={makeEpisodeAssetsMetadata('fedhike')}
+      />
+      <Composition
+        id="IntroSting"
+        component={IntroStingStandalone}
+        durationInFrames={INTRO_STING_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        defaultProps={{assets: null} satisfies IntroStingStandaloneProps}
+        calculateMetadata={stingMetadata}
       />
     </>
   );

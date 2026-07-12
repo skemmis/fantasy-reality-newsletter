@@ -10,6 +10,7 @@ import {
 import {Audio} from '@remotion/media';
 import {COLORS, hardShadow, inkAlpha, pixelBorder} from '../theme/theme';
 import {PIXEL_FAMILY, MONO_FAMILY} from '../fonts';
+import {useScreenShake} from '../fx/useScreenShake';
 
 export interface DotPlotColumn {
   /** Column header, e.g. "2026". */
@@ -113,6 +114,14 @@ export const DotPlot: React.FC<DotPlotProps> = ({
     ? spring({frame: hlLocal, fps, config: {damping: 12, stiffness: 280, mass: 0.7}, durationInFrames: 12})
     : 0;
 
+  // Card kick when the highlight flash hits.
+  const shake = useScreenShake(highlight ? appearFrame + highlightAt : Infinity, {
+    amp: 10,
+    rotAmp: 0.7,
+    durationInFrames: 14,
+    seed: 'dotplot',
+  });
+
   if (local < 0) return null;
 
   // Tick SFX: one per group entrance, capped.
@@ -186,6 +195,8 @@ export const DotPlot: React.FC<DotPlotProps> = ({
           border: pixelBorder(4),
           boxShadow: hardShadow(inkAlpha(0.18), 2),
           position: 'relative',
+          translate: shake.translate,
+          rotate: shake.rotate,
         }}
       >
         {/* y axis: rate levels + gridlines */}

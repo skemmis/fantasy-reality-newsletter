@@ -1,0 +1,5 @@
+[
+  {"t": "2025-10-01T04:00:00Z", "label": "SHUTDOWN BEGINS\nfunding lapses at midnight", "dx": 0, "dy": -30, "id": "begins"},
+  {"t": "2025-11-05T05:00:00Z", "label": "LONGEST EVER — 35 DAYS\nmarket called 40+; DC said 'soon'", "dx": -10, "dy": -46, "id": "record"},
+  {"t": "2025-11-12T05:00:00Z", "label": "REOPENS · 43 DAYS\nTrump signs the CR", "dx": -20, "dy": -34, "id": "ends"}
+]

@@ -1,0 +1,133 @@
+# Episode spec: maps script beats -> scenes/components/assets.
+# Consumed by the Remotion composition; timings come from vo/words.json once
+# VO exists (each beat starts at the start of its first narration line).
+# Durations below are pre-VO estimates in seconds.
+#
+# NEW GRAMMAR (2026-07-12): the animated chart is a QUICK REFERENCE, not the
+# set. MarketChartScene earns ~3 appearances (cold open, the tape, the zoom)
+# plus two ~4s annotation inserts; headline cards, a stat slam, a re-typeset
+# quote, comparison bars and a meme carry the rest. Chart beats total ~42s of
+# ~128s runtime (~33%, under the 35% cap).
+
+slug: agi2027
+title: "The market says: 5% OpenAI declares AGI before 2027"
+format: { width: 1920, height: 1080, fps: 30 }
+data: data.json          # OAIAGI-26, exported by scripts/export_episode_data.py
+closeup: agi2027-closeup/data.json   # 1h tape, Apr 8 – May 2 2026 (clause-death whipsaw)
+vo: vo/words.json        # exported by scripts/vo_make_timeline.py
+music: null              # TODO: Epidemic Sound bed, drop in public/assets/music/
+scenes:
+  - beat: cold-open
+    scene: MarketChartScene           # CHART
+    est: 10
+    props: { revealUntil: end, showCounter: true, freeze: true, dim: true }
+    note: counter alone on dimmed card; "5%" huge; line hidden until the-tape
+
+  - beat: title
+    scene: KineticTitle
+    est: 3
+    props: { words: ["THE", "MARKET", "SAYS"], accent: magenta, kicker: "ep 02" }
+
+  - beat: setup
+    scene: BigNumber                  # stat slam — "declaring AGI" is a CONTRACT event
+    est: 30
+    props:
+      value: 100
+      prefix: "$"
+      suffix: "B"
+      label: "OPENAI'S REPORTED 'AGI' BAR"
+      sub: "AGI = $100B IN PROFITS · THE INFORMATION, DEC 2024"
+      kicker: "THE CLAUSE · NOT A SCIENCE QUESTION"
+      sfx: ka-ching
+    overlays:
+      - { type: propPop, asset: money-printer, at: 0.6 }   # "tens of billions"
+      - { type: statCard, text: "PEAK FAITH — 24% · SEP 23 2025" }
+
+  - beat: the-tape
+    scene: MarketChartScene           # CHART
+    est: 12
+    props: { revealFrom: 0.0, revealUntil: 0.2, showCursor: true, showCounter: true }
+
+  - beat: move-panel
+    scene: HeadlineCard               # Oct 2025 Microsoft restructuring
+    est: 14
+    props:
+      src: assets/headlines/agi-deal-axios.png
+      source: AXIOS
+      date: "OCT 29 2025"
+      headline: "What to know about OpenAI's new deal with Microsoft"
+      highlight: { x: 0.06, y: 0.58, w: 0.88, h: 0.22 }   # the expert-panel line
+      highlightAt: 40
+    inserts:
+      - { type: MarketChartScene, at: 9, dur: 4, props: { annotationsThrough: panel, revealUntil: "2025-11-01" } }
+    note: "an independent expert panel now VERIFIES any AGI call; 24%→11%"
+
+  - beat: move-clause
+    scene: HeadlineCard               # Apr 2026 the AGI clause dies
+    est: 14
+    props:
+      src: assets/headlines/agi-clause-uniteai.png
+      source: UNITE.AI
+      date: "APR 27 2026"
+      headline: "Microsoft Loses OpenAI Exclusivity and AGI Clause in Amended Deal"
+      tilt: 1.5
+      highlight: { x: 0.05, y: 0.5, w: 0.9, h: 0.2 }
+      highlightAt: 44
+    inserts:
+      - { type: MarketChartScene, at: 9, dur: 4, props: { annotationsThrough: clause-dead, revealUntil: "2026-05-02" } }
+    note: "declaring AGI now triggers nothing; the April whipsaw 18→10→18→10"
+
+  - beat: meme-react
+    scene: MemeCutaway
+    est: 3
+    props:
+      meme_intent: "deadpan / unbothered — the big red button does nothing now"
+      asset: mascot-deadpan            # fallback: this-is-fine
+      caption: "THE BUTTON IS UNPLUGGED"
+
+  - beat: zoom
+    scene: MarketChartScene           # CHART — the hourly close-up
+    est: 12
+    props:
+      data: agi2027-closeup/data.json
+      window: { start: "2026-04-08", end: "2026-05-02" }
+      revealUntil: 1.0
+      showCursor: true
+      showCounter: true
+      annotationsThrough: clause-dead
+
+  - beat: so-what
+    scene: PostCard                    # Altman re-typeset quote + horizon bars
+    est: 18
+    props:
+      name: "Sam Altman"
+      handle: "@sama · OpenAI"
+      body: "AGI is **not a super useful term**."
+      timestamp: "PUBLIC REMARKS · 2026"
+      source: "OPENAI"
+      accent: magenta
+    overlays:
+      - type: CompareBars
+        at: 8
+        props:
+          title: "IT'S THE DEADLINE, NOT THE ROBOT"
+          unit: "KALSHI · YES PRICE"
+          rows:
+            - { label: "BEFORE 2027", value: 5,  display: "5%",  slot: 2 }
+            - { label: "BEFORE 2028", value: 26, display: "26%", slot: 1 }
+            - { label: "BEFORE 2030", value: 36, display: "36%", slot: 0 }
+
+  - beat: endcard
+    scene: EndCard
+    est: 12
+    props:
+      title: RESOLUTION WATCH
+      entries:
+        - { market: "OPENAI DECLARES AGI BY 2027", call: "covered @ 5%", status: OPEN }
+        - { market: "FED HIKE 2026", call: "covered @ 51%", status: OPEN }
+
+intro_cam:              # optional human cold-open (Sam on camera) — slots before cold-open
+  enabled: false
+  src: null             # drop a clip at public/episodes/agi2027/intro.mp4 and set enabled
+  lower_third: "SAM — definitely not an accelerationist"
+captions: { style: word-pop, page_words: 4 }

@@ -9,6 +9,7 @@ import {DotPlot} from './components/DotPlot';
 import {PostCard} from './components/PostCard';
 import {TickerWipe} from './components/TickerWipe';
 import {KineticTitle} from './components/KineticTitle';
+import {CRTOverlay} from './fx/CRTOverlay';
 
 const FPS = 30;
 
@@ -19,6 +20,8 @@ export type ShotReelProps = {
    * placeholder shot.
    */
   headlineSrc: string | null;
+  /** Opt-in retro screen treatment. */
+  crt?: boolean;
 } & Record<string, unknown>;
 
 export const HEADLINE_SHOT = 'assets/headlines/jobs-cnbc.png';
@@ -72,11 +75,12 @@ const DOT_COLUMNS = [
 const FED_BODY =
   'Job gains have **accelerated** in recent months, and the unemployment rate has remained low. Inflation remains **somewhat elevated**. The Committee judges that upside risks to inflation have **increased**.';
 
-export const ShotReel: React.FC<ShotReelProps> = ({headlineSrc}) => {
+export const ShotReel: React.FC<ShotReelProps> = ({headlineSrc, crt = false}) => {
   const highlight = headlineSrc ? HL_REAL : HL_PLACEHOLDER;
   const aspect = headlineSrc ? REAL_ASPECT : 1.6;
   const cardWidth = headlineSrc ? 1400 : 1240;
   return (
+    <CRTOverlay intensity={crt ? 0.6 : 0}>
     <AbsoluteFill style={{background: COLORS.canvas}}>
       {/* 1 · HeadlineCard: slam + magenta highlight on the number */}
       <Sequence durationInFrames={S.zoom} name="HeadlineCard">
@@ -189,5 +193,6 @@ export const ShotReel: React.FC<ShotReelProps> = ({headlineSrc}) => {
         </Sequence>
       ))}
     </AbsoluteFill>
+    </CRTOverlay>
   );
 };

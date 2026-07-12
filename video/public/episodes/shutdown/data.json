@@ -1,0 +1,24 @@
+{
+  "slug": "shutdown",
+  "markets": [],
+  "annotations": [
+    {"t": "2025-10-01T04:00:00Z", "label": "SHUTDOWN BEGINS\nfunding lapses at midnight", "dx": 0, "dy": -30, "id": "begins"},
+    {"t": "2025-11-05T05:00:00Z", "label": "LONGEST EVER — 35 DAYS\nmarket called 40+; DC said 'soon'", "dx": -10, "dy": -46, "id": "record"},
+    {"t": "2025-11-12T05:00:00Z", "label": "REOPENS · 43 DAYS\nTrump signs the CR", "dx": -20, "dy": -34, "id": "ends"}
+  ],
+  "meta": {
+    "title": "How long will the government shutdown last?",
+    "generated_at": "2026-07-12T00:00:00Z",
+    "interval": "1d",
+    "last_price_pct": null,
+    "volume_usd": null,
+    "data_status": "TAPE_UNAVAILABLE",
+    "note": "The Kalshi API instance available in this environment returns event metadata for every shutdown series but ZERO nested markets and ZERO candlesticks (verified 2026-07-12 across api.elections.kalshi.com and api.kalshi.com, all ticker/status/KX-drop variants, and scripts/export_episode_data.py itself, which fetches fedhike fine but raises 'Event ... has no markets' for all of these). No tape was fabricated. Re-run the exporter to populate markets[] when the data is reachable.",
+    "target_markets": [
+      {"role": "retro-primary", "ticker": "KXGOVSHUTLENGTH-26JAN01", "title": "How long will the government shutdown last? (Sep 5 2025 – Jan 1 2026)", "resolved": "43 days (bracket 41+)", "reexport": "python3 scripts/export_episode_data.py KXGOVSHUTLENGTH-26JAN01 --slug shutdown --interval 1d --annotations annotations.json"},
+      {"role": "retro-binary", "ticker": "KXSHUTDOWNBY-25", "title": "Government shutdown in 2025?", "resolved": "YES"},
+      {"role": "closeup", "ticker": "KXGOVSHUTLENGTH-26JAN01", "window": "2025-10-25 .. 2025-11-13", "reexport": "python3 scripts/export_episode_data.py KXGOVSHUTLENGTH-26JAN01 --slug shutdown-closeup --interval 1h --start 2025-10-25 --end 2025-11-13"},
+      {"role": "live", "ticker": "KXSHUTDOWNBY-26DEC31", "title": "Government shutdown in 2026?", "status": "OPEN (no tradeable data returned here)"}
+    ]
+  }
+}

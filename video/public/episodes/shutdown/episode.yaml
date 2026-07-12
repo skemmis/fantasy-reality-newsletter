@@ -1,0 +1,150 @@
+# Episode spec: maps script beats -> scenes/components/assets.
+# Consumed by the Remotion composition; timings come from vo/words.json once
+# VO exists (each beat starts at the start of its first narration line).
+# Durations below are pre-VO estimates in seconds.
+#
+# RETRO episode (the fall-2025 shutdown, scored after the fact).
+#
+# DATA CAVEAT: "The Tape" (MarketChartScene) needs data.json/markets[], which
+# the Kalshi API does not return for any shutdown market in this environment
+# (see data.json meta.note). This cut therefore runs CHART-LIGHT and leans
+# entirely on the NEW grammar — stat slams, headline cards, a compare-bars
+# "who called it" beat and memes carry every beat. The one chart moment
+# ([beat:the-bet] insert) is marked pending and stays dark until the exporter
+# populates the tape (commands in data.json meta.target_markets). No prices
+# were invented. When data lands, add explicit [beat:the-tape]/[beat:zoom]
+# MarketChartScene beats and this stays under the 35% chart cap easily.
+
+slug: shutdown
+title: "The market says: it lasted 43 days — and the crowd called it"
+format: { width: 1920, height: 1080, fps: 30 }
+data: data.json          # markets[] empty in this env — see meta.note
+vo: vo/words.json        # exported by scripts/vo_make_timeline.py
+music: null              # TODO: Epidemic Sound bed, drop in public/assets/music/
+scenes:
+  - beat: cold-open
+    scene: BigNumber                  # the hook number (no chart tape available)
+    est: 12
+    props:
+      value: 43
+      suffix: " DAYS"
+      label: "THE GOVERNMENT STAYED SHUT"
+      sub: "OCT 1 – NOV 12 2025 · LONGEST IN U.S. HISTORY"
+      kicker: "RESOLUTION WATCH · RETRO"
+      sfx: alarm
+      size: 240
+
+  - beat: title
+    scene: KineticTitle
+    est: 3
+    props: { words: ["THE", "MARKET", "SAYS"], accent: magenta, kicker: "ep 03 · retro" }
+
+  - beat: setup
+    scene: HeadlineCard               # the standoff, in one real card
+    est: 26
+    props:
+      src: assets/headlines/shutdown-npr.png
+      source: NPR
+      date: "NOV 13 2025"
+      headline: "Longest government shutdown in U.S. history ends after 43 days"
+      tilt: -1.5
+    overlays:
+      - { type: statCard, text: "THE BILL FAILED 14 TIMES", at: 6 }
+      - { type: statCard, text: "FIGHT: EXPIRING ACA SUBSIDIES", at: 12 }
+
+  - beat: the-bet
+    scene: CompareBars                # the spine: who called it
+    est: 20
+    props:
+      title: "WHO CALLED IT"
+      unit: "PREDICTED SHUTDOWN LENGTH"
+      max: 43
+      rows:
+        - { label: "KALSHI (THE MARKET)", value: 43, display: "40+ DAYS", slot: 0 }
+        - { label: "DC / CABLE CONSENSUS", value: 6,  display: "'DAYS AWAY'", slot: 1 }
+    overlays:
+      - type: HeadlineCard
+        at: 11
+        props:
+          src: assets/headlines/shutdown-market-fox.png
+          source: FOX BUSINESS
+          date: "2025"
+          headline: "Prediction markets expect government shutdown to last over two weeks"
+          width: 900
+          tilt: 2
+    inserts:
+      # PENDING: lights up once data.json/markets[] is populated (see meta.note).
+      - { type: MarketChartScene, at: 4, dur: 5, status: pending_data,
+          props: { annotationsThrough: record, showCounter: true },
+          fallback: keep-comparebars }
+
+  - beat: move-begins
+    scene: BigNumber                  # the human stakes on day one
+    est: 12
+    props:
+      value: 42
+      suffix: "M"
+      label: "AMERICANS WARNED THEIR FOOD AID COULD STOP"
+      sub: "SNAP · SHUTDOWN DAY ONE"
+      kicker: "OCT 1 2025"
+      sfx: alarm
+    overlays:
+      - { type: propPop, asset: gavel, at: 0.5 }
+
+  - beat: move-record
+    scene: HeadlineCard               # Nov 5 — the record breaks
+    est: 12
+    props:
+      src: assets/headlines/shutdown-record-axios.png
+      source: AXIOS
+      date: "NOV 5 2025"
+      headline: "Trump breaks record for longest government shutdown in history"
+      highlight: { x: 0.05, y: 0.5, w: 0.9, h: 0.2 }
+      highlightAt: 30
+    note: "day 35 — surprised the networks, not the order book"
+
+  - beat: meme-react
+    scene: MemeCutaway
+    est: 3
+    props:
+      meme_intent: "this is fine — furloughed, sitting in the flames"
+      asset: this-is-fine
+      caption: "DAY 35 OF 'DAYS AWAY'"
+
+  - beat: move-ends
+    scene: BigNumber                  # bookend: the payoff number returns
+    est: 12
+    props:
+      value: 43
+      suffix: " DAYS"
+      label: "FINAL COUNT — THE MARKET'S NUMBER"
+      sub: "SENATE 60–40 NOV 9 · SIGNED NOV 12 2025"
+      kicker: "REOPENED"
+      accent: gold
+      sfx: ka-ching
+      size: 240
+
+  - beat: so-what
+    scene: MemeCutaway                # the crowd is still betting
+    est: 16
+    props:
+      meme_intent: "smug / vindicated — the market was right, and it's still open"
+      asset: mascot-smug
+      caption: "OPEN NOW: 'GOVT SHUTDOWN IN 2026?'"
+      credit: "KXSHUTDOWNBY-26DEC31 · KALSHI"
+
+  - beat: endcard
+    scene: EndCard
+    est: 12
+    props:
+      title: RESOLUTION WATCH
+      entries:
+        - { market: "GOVT SHUTDOWN 2025", call: "market called 40+ days", status: YES }
+        - { market: "GOVT SHUTDOWN IN 2026", call: "open — go check", status: OPEN }
+        - { market: "OPENAI DECLARES AGI BY 2027", call: "covered @ 5%", status: OPEN }
+
+intro_cam:              # optional human cold-open (Sam on camera) — slots before cold-open
+  enabled: false
+  src: null             # drop a clip at public/episodes/shutdown/intro.mp4 and set enabled
+  lower_third: "SAM — was not furloughed"
+captions: { style: word-pop, page_words: 4 }

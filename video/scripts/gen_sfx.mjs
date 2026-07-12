@@ -117,6 +117,34 @@ const SOUNDS = {
     p_env_punch: 0.6,
     p_lpf_freq: 0.32,
   }),
+  // Digital breakage — VHSGlitch slice displacement. Saw wave torn apart
+  // by a fast negative arp + phaser offset; short and nasty.
+  glitch: make({
+    wave_type: 1,
+    p_base_freq: 0.34,
+    p_freq_ramp: -0.18,
+    p_arp_mod: -0.6,
+    p_arp_speed: 0.85,
+    p_repeat_speed: 0.7,
+    p_pha_offset: 0.35,
+    p_pha_ramp: -0.25,
+    p_env_sustain: 0.16,
+    p_env_decay: 0.12,
+    p_env_punch: 0.55,
+    p_hpf_freq: 0.12,
+    sound_vol: 0.55,
+  }),
+  // Raw white-noise burst — VHSGlitch static wash under the glitch hit.
+  static: make({
+    wave_type: 3,
+    p_base_freq: 0.62,
+    p_env_attack: 0.02,
+    p_env_sustain: 0.24,
+    p_env_decay: 0.18,
+    p_lpf_freq: 0.9,
+    p_hpf_freq: 0.2,
+    sound_vol: 0.45,
+  }),
 };
 
 for (const [name, params] of Object.entries(SOUNDS)) {
