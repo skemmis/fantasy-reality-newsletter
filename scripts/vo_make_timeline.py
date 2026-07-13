@@ -12,6 +12,21 @@ Two modes, one output shape (``video/public/episodes/<slug>/vo/words.json``):
             script with whisperx. Requires ``pip install whisperx`` (not a repo
             dependency); exits with instructions if it isn't importable.
 
+            TRUE forced alignment: the script text is fed to whisperx's
+            wav2vec2 aligner as one segment spanning the whole file — no ASR
+            pass, no transcription drift. Words the align model can't time
+            (bare digits/symbols like "51%") are interpolated from their
+            aligned neighbours. Verified working invocation (CPU):
+
+                SSL_CERT_FILE=/root/.ccr/ca-bundle.crt \\
+                python scripts/vo_make_timeline.py --align \\
+                    --script video/public/episodes/fedhike/script.md \\
+                    --audio take.wav --slug fedhike [--language en] \\
+                    [--out-dir /some/where]   # override the episode vo/ dir
+
+            First run downloads the wav2vec2 align model (~360 MB) from
+            download.pytorch.org; needs ffmpeg on PATH for audio decode.
+
 Script format (markdown):
   - lines starting with ``#``          -> ignored (headers / comments)
   - lines inside ``` fenced blocks     -> ignored
@@ -215,7 +230,8 @@ def run_tts(script_lines: list[Line], out_dir: Path, voice_id: str,
 
 # ---------------------------------------------------------------- align mode
 
-def run_align(script_lines: list[Line], out_dir: Path, audio: Path) -> None:
+def run_align(script_lines: list[Line], out_dir: Path, audio: Path,
+              language: str = "en") -> None:
     try:
         import whisperx  # type: ignore
     except ImportError:
@@ -227,40 +243,58 @@ def run_align(script_lines: list[Line], out_dir: Path, audio: Path) -> None:
         )
 
     device = os.environ.get("WHISPERX_DEVICE", "cpu")
-    compute = os.environ.get("WHISPERX_COMPUTE", "int8")
-    model = whisperx.load_model("base", device, compute_type=compute)
-    audio_data = whisperx.load_audio(str(audio))
-    result = model.transcribe(audio_data)
+    audio_data = whisperx.load_audio(str(audio))  # mono float32 @ 16 kHz
+    audio_dur = len(audio_data) / 16000.0
+
+    # TRUE forced alignment: we HAVE the exact script, so feed it to the
+    # wav2vec2 aligner as one segment spanning the whole take — no ASR pass,
+    # nothing hallucinated. whisperx tokenizes the segment text on
+    # whitespace, so its word list maps 1:1 (in order) onto script tokens.
     align_model, meta = whisperx.load_align_model(
-        language_code=result["language"], device=device)
-    aligned = whisperx.align(result["segments"], align_model, meta,
-                             audio_data, device)
+        language_code=language, device=device)
+    transcript = " ".join(ln.text for ln in script_lines)
+    aligned = whisperx.align(
+        [{"start": 0.0, "end": audio_dur, "text": transcript}],
+        align_model, meta, audio_data, device,
+        return_char_alignments=False,
+    )
 
-    # Flatten aligned words, then assign each to a script line by walking the
-    # script's tokens in order (greedy match on normalized text).
-    hyp = [w for w in aligned.get("word_segments", [])
-           if w.get("start") is not None]
-    script_tokens = [(ln.i, _norm(tok)) for ln in script_lines
-                     for tok in ln.text.split()]
+    hyp = [w for seg in aligned.get("segments", []) for w in seg.get("words", [])]
+    script_tokens = [(ln.i, tok) for ln in script_lines for tok in ln.text.split()]
+    if len(hyp) != len(script_tokens):
+        # Positional mapping is broken; bail loudly rather than mis-tag lines.
+        raise SystemExit(
+            f"alignment returned {len(hyp)} words for {len(script_tokens)} "
+            "script tokens — whisperx tokenization mismatch; inspect the take.")
+
+    # Words the align model can't time (bare digits/symbols, e.g. "51%") come
+    # back without start/end — interpolate them between aligned neighbours.
     words: list[dict] = []
-    ti = 0
-    duration = 0.0
-    for w in hyp:
-        nw = _norm(w.get("word", ""))
-        line_i = script_tokens[min(ti, len(script_tokens) - 1)][0] if script_tokens else 0
-        # advance the script pointer past matching (or skipped) tokens
-        if ti < len(script_tokens) and script_tokens[ti][1] == nw:
-            line_i = script_tokens[ti][0]
-            ti += 1
-        elif ti + 1 < len(script_tokens) and script_tokens[ti + 1][1] == nw:
-            ti += 2
-            line_i = script_tokens[ti - 1][0]
-        words.append({"w": w["word"], "start": round(float(w["start"]), 3),
-                      "end": round(float(w["end"]), 3), "line": line_i})
-        duration = max(duration, float(w["end"]))
+    untimed: list[int] = []
+    for k, w in enumerate(hyp):
+        line_i, tok = script_tokens[k]
+        s, e = w.get("start"), w.get("end")
+        if s is None or e is None:
+            untimed.append(len(words))
+            s = e = None
+        words.append({"w": tok, "start": s, "end": e, "line": line_i})
+    for k in untimed:
+        prev_end = next((words[j]["end"] for j in range(k - 1, -1, -1)
+                         if words[j]["end"] is not None), 0.0)
+        next_start = next((words[j]["start"] for j in range(k + 1, len(words))
+                           if words[j]["start"] is not None), audio_dur)
+        words[k]["start"], words[k]["end"] = prev_end, next_start
+    for w in words:
+        w["start"], w["end"] = round(float(w["start"]), 3), round(float(w["end"]), 3)
+    if untimed:
+        print(f"note: {len(untimed)} word(s) interpolated "
+              f"({', '.join(words[k]['w'] for k in untimed[:8])}...)"
+              if len(untimed) > 8 else
+              f"note: {len(untimed)} word(s) interpolated "
+              f"({', '.join(words[k]['w'] for k in untimed)})")
 
-    path = write_timeline(out_dir, audio.name, duration, words, script_lines)
-    print(f"aligned {len(words)} words -> {path}")
+    path = write_timeline(out_dir, audio.name, audio_dur, words, script_lines)
+    print(f"aligned {len(words)} words over {audio_dur:.2f}s -> {path}")
 
 
 # --------------------------------------------------------------------- cli
@@ -277,6 +311,11 @@ def main() -> None:
     p.add_argument("--slug", help="episode slug (output dir); required unless --dry-run")
     p.add_argument("--audio", type=Path, help="recorded audio file (--align)")
     p.add_argument("--voice", help="ElevenLabs voice id (else ELEVENLABS_VOICE_ID)")
+    p.add_argument("--language", default="en",
+                   help="align model language code (--align; default en)")
+    p.add_argument("--out-dir", type=Path,
+                   help="write vo.mp3/words.json here instead of "
+                        "video/public/episodes/<slug>/vo (smoke tests)")
     args = p.parse_args()
 
     script_lines = parse_script(args.script.read_text())
@@ -288,9 +327,9 @@ def main() -> None:
             print(f"  {ln.i:>3}: {tag}{ln.text}")
         return
 
-    if not args.slug:
+    if not args.slug and not args.out_dir:
         raise SystemExit("--slug is required for --tts/--align")
-    out_dir = REPO / "video" / "public" / "episodes" / args.slug / "vo"
+    out_dir = args.out_dir or (REPO / "video" / "public" / "episodes" / args.slug / "vo")
 
     if args.tts:
         api_key = os.environ.get("ELEVENLABS_API_KEY")
@@ -305,7 +344,7 @@ def main() -> None:
     else:  # --align
         if not args.audio:
             raise SystemExit("--align needs --audio <file>.")
-        run_align(script_lines, out_dir, args.audio)
+        run_align(script_lines, out_dir, args.audio, language=args.language)
 
 
 if __name__ == "__main__":

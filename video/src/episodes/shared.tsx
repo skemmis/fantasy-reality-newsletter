@@ -34,31 +34,79 @@ import {AssetEntry, assetSrc} from '../assets';
 export interface Beat<Id extends string = string> {
   readonly id: Id;
   readonly est: number; // seconds, mirrors episode.yaml
+  /**
+   * Manual timing knob (episode.yaml `nudge:`): shift THIS beat's start by
+   * ±N frames after VO/est timing is computed. Does NOT cascade — the
+   * neighbouring beats' anchors are untouched; this beat and its predecessor
+   * absorb the shift in their durations (beats keep tiling with no gaps).
+   * Never changes total episode duration. Default 0.
+   */
+  readonly nudge?: number;
+  /**
+   * Manual timing knob (episode.yaml `hold:`): extend THIS beat by N extra
+   * frames. DOES cascade — every subsequent beat starts `hold` frames later
+   * and the total composition duration grows by `hold`. Default 0.
+   */
+  readonly hold?: number;
 }
 
 /**
- * Turn a BEATS table (`[{id, est}, ...]` — ids + second estimates mirroring
- * public/episodes/<slug>/episode.yaml) into frame helpers:
- *   start(id)  absolute frame the beat begins
- *   frames(id) the beat's length in frames
- *   duration   total composition length in frames
+ * Turn a BEATS table (`[{id, est, nudge?, hold?}, ...]` — ids + second
+ * estimates mirroring public/episodes/<slug>/episode.yaml) into frame helpers:
+ *   start(id)  absolute frame the beat begins (nominal anchor + its nudge)
+ *   frames(id) the beat's length in frames (beats always tile: a beat ends
+ *              exactly where the next beat's possibly-nudged start is)
+ *   duration   total composition length in frames (est + holds; nudges
+ *              never change it)
  */
 export const makeBeatClock = <Id extends string>(
   beats: ReadonlyArray<Beat<Id>>,
   fps: number,
 ) => {
-  const start = (id: Id): number => {
+  // Nominal anchor: preceding beats' est frames + their cascading holds.
+  const anchor = (id: Id): number => {
     let at = 0;
     for (const b of beats) {
       if (b.id === id) return at;
-      at += b.est * fps;
+      at += b.est * fps + (b.hold ?? 0);
     }
     return at;
   };
-  const frames = (id: Id): number =>
-    (beats.find((b) => b.id === id)?.est ?? 0) * fps;
-  const duration = beats.reduce((a, b) => a + b.est * fps, 0);
+  const start = (id: Id): number =>
+    anchor(id) + (beats.find((b) => b.id === id)?.nudge ?? 0);
+  const frames = (id: Id): number => {
+    const i = beats.findIndex((b) => b.id === id);
+    if (i < 0) return 0;
+    const b = beats[i];
+    const next = beats[i + 1];
+    // Own length (est + hold), minus own nudge (start moved, end anchored),
+    // plus the next beat's nudge (our end follows its nudged start).
+    return b.est * fps + (b.hold ?? 0) - (b.nudge ?? 0) + (next?.nudge ?? 0);
+  };
+  const duration = beats.reduce((a, b) => a + b.est * fps + (b.hold ?? 0), 0);
   return {start, frames, duration};
+};
+
+/* ------------------------------------------------------------------ */
+/* Overlay cues: beat-local frame offsets with an optional ±nudge      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * An overlay cue (episode.yaml `overlays[].at` + optional `nudge:`): the
+ * beat-local frame an overlay fires at, shiftable by ±N frames without
+ * touching anything else (a nudge moves only its own overlay).
+ */
+export type Cue = number | {readonly at: number; readonly nudge?: number};
+
+/** Resolve a Cue to its effective beat-local frame. */
+export const cueFrame = (c: Cue): number =>
+  typeof c === 'number' ? c : c.at + (c.nudge ?? 0);
+
+/** Resolve a table of Cues to plain frame numbers (`cues({wipe: {at: 550}})`). */
+export const cues = <K extends string>(table: Record<K, Cue>): Record<K, number> => {
+  const out = {} as Record<K, number>;
+  for (const k in table) out[k] = cueFrame(table[k]);
+  return out;
 };
 
 /** staticFile URL for a named one-shot in public/assets/sfx/. */

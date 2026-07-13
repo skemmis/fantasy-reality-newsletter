@@ -60,6 +60,27 @@ video/
 | `annotations.json` | human | Chart callouts (`t`, `label`, `dx/dy`) fed to the exporter |
 | `episode.yaml` | human/Claude | Beat table: `beat` id, `scene`, `est` seconds, props, overlays — the spec `src/episodes/<slug>.tsx` implements |
 
+### Timing knobs: `nudge` / `hold` (episode.yaml ↔ BEATS ↔ overlay cues)
+
+After VO-derived timing is computed, two optional integer-frame knobs let a
+human fine-tune sync without re-recording (defaults are 0 — omitting them is
+pixel-identical to before they existed):
+
+- **`nudge: <frames>`** (±, on a scene entry OR an overlay cue) — shifts ONLY
+  that beat's/overlay's start by N frames. Nothing cascades: neighbouring
+  anchors stay put and the surrounding beat durations absorb the shift (beats
+  keep tiling with no gaps), so total episode duration never changes.
+- **`hold: <frames>`** (scene entries only) — extends that beat by N frames.
+  This DOES cascade: every subsequent beat starts `hold` frames later and the
+  composition grows by `hold`.
+
+Implementation: `makeBeatClock` (`src/episodes/shared.tsx`) reads
+`nudge`/`hold` off the BEATS table (`{id, est, nudge?, hold?}`); overlay cues
+go through `cues({...})`/`cueFrame` (`{at: 550, nudge: 6}`), see the
+beat-local cue tables in `src/episodes/fedhike.tsx`. `episode.yaml` carries
+the same knobs on `scenes[]` entries and `overlays[]` cues — the TSX mirrors
+them.
+
 Compositions never read these directly at frame time: `calculateMetadata`
 (see `load-episode.ts` / `assets.ts`) fetches `data.json` + `assets.json`
 once and passes them down as plain props. Missing files fall back to

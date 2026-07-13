@@ -8,6 +8,23 @@
 # window + hourly zoom ~= 31.7s of 136s ~= 23%); everything else is desk
 # shots, headline slams, stat cards, gauges, memes and Veo b-roll.
 # CRTOverlay (0.55) + ProgressBar run across the whole episode.
+#
+# Timing knobs (post-VO fine-tuning; both default 0, integer FRAMES; see
+# video/README.md "Timing knobs" + makeBeatClock in src/episodes/shared.tsx):
+#   nudge: <frames>   on a scene entry or an overlay cue — shift ONLY that
+#                     element's start by ±N frames; neighbours' anchors stay
+#                     put, surrounding durations absorb it (no cascade, total
+#                     duration unchanged).
+#   hold: <frames>    on a scene entry — extend the beat by N frames; DOES
+#                     cascade (everything after starts N later, episode grows).
+# Commented example:
+#   - beat: setup
+#     scene: DeskShot
+#     est: 28
+#     nudge: -4        # setup's visuals were landing 4 frames late vs VO
+#     hold: 12         # let the last stat card breathe 12 extra frames
+#     overlays:
+#       - { type: punchChip, text: "...", at: 250, nudge: 6 }   # chip only, +6
 
 slug: fedhike
 title: "The market says: 51% the Fed HIKES this year"

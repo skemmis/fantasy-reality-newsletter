@@ -21,6 +21,7 @@ import {
   LowerThird,
   PunchChip,
   StatCard,
+  cues,
   makeBeatClock,
   sfx,
   valueAt,
@@ -60,6 +61,11 @@ const FPS = 30;
  * (fast tape ~11.5s, tariff window ~8.2s, hourly zoom 12s ≈ 32s of 136s);
  * everything else is desk shots, headline slams, stat cards, gauges,
  * memes and Veo b-roll.
+ *
+ * Timing knobs (mirror episode.yaml; see makeBeatClock): each entry also
+ * accepts `nudge: <frames>` (± shift of this beat's start only, absorbed by
+ * neighbouring durations) and `hold: <frames>` (extends this beat, pushing
+ * everything after it later). E.g. `{id: 'setup', est: 28, nudge: -4}`.
  */
 export const BEATS = [
   {id: 'cold-open', est: 10},
@@ -92,8 +98,9 @@ export const HEADLINE_PCT = 51;
 const ZoomScene: React.FC<{
   data: EpisodeData;
   flame: AssetEntry | null;
-}> = ({data, flame}) => {
-  const FIRE_AT = 100;
+  fireAt?: number;
+}> = ({data, flame, fireAt = 100}) => {
+  const FIRE_AT = fireAt;
   const shake = useScreenShake(FIRE_AT, {amp: 9, rotAmp: 0.8, durationInFrames: 16, seed: 'zoomfire'});
   return (
     <AbsoluteFill style={{background: COLORS.canvas}}>
@@ -203,13 +210,25 @@ export const FedHikeEpisode: React.FC<{
   const rateDial = resolveAsset(assets, 'rate-dial', 'prop');
   const cpiFlame = resolveAsset(assets, 'cpi-flame', 'prop');
 
-  // ---- beat-local cut points (frames, local to each beat) ----
-  const SETUP = {wipe: 550, meter: 558};
-  const TAPE = {drawStart: 8, drawEnd: 188, wipe: 335, chapter: 345};
-  const TARIFF = {meme: 150, back: 264};
-  const JOBS = {big: 150, bars: 228};
-  const FOMC = {dots: 105, banner: 185, versus: 255};
-  const SOWHAT = {calm: 264};
+  // ---- beat-local overlay cues (frames, local to each beat) ----
+  // Each cue accepts an optional `nudge: <frames>` (±) to shift ONLY that
+  // overlay after VO timing lands, e.g. {at: 550, nudge: 6}. Mirrors the
+  // `overlays[].nudge` knob in episode.yaml.
+  const SETUP = cues({
+    lowerThird: {at: 26},
+    punch: {at: 250},
+    stat1: {at: 330},
+    stat2: {at: 430},
+    wipe: {at: 550},
+    meter: {at: 558},
+  });
+  const TAPE = cues({drawStart: {at: 8}, drawEnd: {at: 188}, wipe: {at: 335}, chapter: {at: 345}});
+  const TARIFF = cues({crate: {at: 34}, meme: {at: 150}, back: {at: 264}, punch: {at: 16}});
+  const JOBS = cues({big: {at: 150}, bars: {at: 228}});
+  const FOMC = cues({dots: {at: 105}, banner: {at: 185}, versus: {at: 255}});
+  const ZOOM = cues({fire: {at: 100}});
+  const SOWHAT = cues({calm: {at: 264}, dial: {at: 60}, flame: {at: 140}, punch: {at: 250}});
+  const ENDCARD = cues({wave: {at: 90}});
 
   // ---- absolute frame anchors ----
   const S = {
@@ -312,7 +331,7 @@ export const FedHikeEpisode: React.FC<{
           <LowerThird
             name="Anchor Goblin"
             sub="definitely a financial professional"
-            appearFrame={26}
+            appearFrame={SETUP.lowerThird}
           />
           <div
             style={{
@@ -325,16 +344,16 @@ export const FedHikeEpisode: React.FC<{
               gap: 42,
             }}
           >
-            <StatCard label="HIKE by Dec 31 2026" value="51%" accent={tokens.yes} appearFrame={330} />
-            <StatCard label="CUT by Dec 31 2026" value="25%" accent={tokens.no} appearFrame={430} />
+            <StatCard label="HIKE by Dec 31 2026" value="51%" accent={tokens.yes} appearFrame={SETUP.stat1} />
+            <StatCard label="CUT by Dec 31 2026" value="25%" accent={tokens.no} appearFrame={SETUP.stat2} />
           </div>
           {/* volume gag chip as "$1.2M has settled on: coin flip" lands */}
-          <PunchChip text={'$1.2M SAYS: COIN FLIP'} appearFrame={250} x="21%" y="30%" rotate={-3} fontSize={28} />
+          <PunchChip text={'$1.2M SAYS: COIN FLIP'} appearFrame={SETUP.punch} x="21%" y="30%" rotate={-3} fontSize={28} />
         </DeskShot>
         <Sequence from={4} durationInFrames={30} name="Setup whoosh" layout="none">
           <Audio src={sfx('whoosh-down')} volume={0.3} />
         </Sequence>
-        {[330, 430].map((f) => (
+        {[SETUP.stat1, SETUP.stat2].map((f) => (
           <Sequence key={f} from={f} durationInFrames={12} name={`Stat pop ${f}`} layout="none">
             <Audio src={sfx('pop-in')} volume={0.4} />
           </Sequence>
@@ -403,7 +422,7 @@ export const FedHikeEpisode: React.FC<{
           showAnnotations
           curve="step"
         />
-        <Sequence from={34} durationInFrames={TARIFF.meme - 34} name="Prop: tariff crate">
+        <Sequence from={TARIFF.crate} durationInFrames={TARIFF.meme - TARIFF.crate} name="Prop: tariff crate">
           <PropPop asset={tariffCrate} label="TARIFFS" x="76%" y="26%" size={230} wobble />
         </Sequence>
         <Sequence from={2} durationInFrames={24} name="Tariff alarm" layout="none">
@@ -435,7 +454,7 @@ export const FedHikeEpisode: React.FC<{
           showAnnotations
           curve="step"
         />
-        <PunchChip text="THE MARKET CHOSE: YES" appearFrame={16} x="62%" y="72%" rotate={-2} />
+        <PunchChip text="THE MARKET CHOSE: YES" appearFrame={TARIFF.punch} x="62%" y="72%" rotate={-2} />
       </Sequence>
 
       {/* ---- move-jobs: headline slam -> 172,000 zoom -> BigNumber -> bars ---- */}
@@ -548,7 +567,7 @@ export const FedHikeEpisode: React.FC<{
 
       {/* ---- zoom: hourly close-up + fire ---- */}
       <Sequence from={S.zoom} durationInFrames={beatFrames('zoom')} name="Zoom + fire">
-        <ZoomScene data={episode} flame={flame} />
+        <ZoomScene data={episode} flame={flame} fireAt={ZOOM.fire} />
       </Sequence>
 
       {/* ---- so-what: money printer gag -> calm desk ---- */}
@@ -570,15 +589,15 @@ export const FedHikeEpisode: React.FC<{
       >
         <DeskShot backdrop={newsdesk} sprite={deadpan} talk={false} spriteSize={600} spriteTop={205}>
           <LowerThird name="Anchor Goblin" sub="certainty costs extra" appearFrame={16} />
-          <Sequence from={60} durationInFrames={170} name="Prop: rate dial">
+          <Sequence from={SOWHAT.dial} durationInFrames={170} name="Prop: rate dial">
             <PropPop asset={rateDial} label="RATE DIAL" x="13%" y="30%" size={190} wobble />
           </Sequence>
-          <Sequence from={140} durationInFrames={170} name="Prop: cpi flame">
+          <Sequence from={SOWHAT.flame} durationInFrames={170} name="Prop: cpi flame">
             <PropPop asset={cpiFlame} label="CPI" x="87%" y="28%" size={170} wobble />
           </Sequence>
           <PunchChip
             text={'THE FED\'S JOB IS TO BE BORING.'}
-            appearFrame={250}
+            appearFrame={SOWHAT.punch}
             x="50%"
             y="24%"
             rotate={-1.5}
@@ -598,7 +617,7 @@ export const FedHikeEpisode: React.FC<{
             },
           ]}
         />
-        <Sequence from={90} durationInFrames={beatFrames('endcard') - 90} name="Powell waves">
+        <Sequence from={ENDCARD.wave} durationInFrames={beatFrames('endcard') - ENDCARD.wave} name="Powell waves">
           <PowellWave asset={powellWave} />
         </Sequence>
         <Sequence from={10} durationInFrames={30} name="Ka-ching" layout="none">
